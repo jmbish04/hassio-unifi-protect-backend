@@ -1,6 +1,7 @@
 name = "unifi-protect-api"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
+workers_dev = false
 
 # Public entrypoints
 routes = [
@@ -12,6 +13,13 @@ routes = [
 
 # Cron (every 15 minutes) - check patrol configs and scheduled automations
 triggers = { crons = ["*/15 * * * *"] }
+
+
+# Static assets configuration
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
 
 # D1 database for events/labels
 [[d1_databases]]
@@ -40,6 +48,9 @@ dead_letter_queue = "events-dlq"  # optional
 # Workers AI (if you use Cloudflare's models)
 [ai]
 binding = "AI"
+
+
+
 
 # If your Protect hostname is behind Cloudflare Access, add these as secrets:
 # wrangler secret put ACCESS_CLIENT_ID

@@ -1,0 +1,550 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "UniFi Protect API",
+    "description": "Cloudflare Worker backend for UniFi Protect integration with Home Assistant, featuring security sweeps, patrol configurations, and camera management",
+    "version": "1.0.0",
+    "contact": {
+      "name": "UniFi Protect API",
+      "url": "https://github.com/jmbish04/hassio-unifi-protect-backend"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://protect.hacolby.app",
+      "description": "Production server"
+    },
+    {
+      "url": "https://unifi-protect-api.{username}.workers.dev",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/webhook": {
+      "post": {
+        "summary": "Webhook endpoint for events",
+        "description": "Receives webhook events from Home Assistant or UniFi Protect",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event processed successfully",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "example": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid JSON"
+          }
+        }
+      }
+    },
+    "/agent/security_sweep": {
+      "get": {
+        "summary": "Trigger security sweep",
+        "description": "API-triggered on-demand security sweep",
+        "parameters": [
+          {
+            "name": "camera",
+            "in": "query",
+            "description": "Focus on specific camera",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Security sweep completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySweepResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Trigger security sweep (POST)",
+        "description": "API-triggered on-demand security sweep via POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "camera": {
+                    "type": "string",
+                    "description": "Focus on specific camera"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Security sweep completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecuritySweepResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/protect/login": {
+      "post": {
+        "summary": "Login to UniFi Protect",
+        "description": "Authenticate with UniFi Protect and establish session",
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtectLoginResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Login failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/protect/cameras": {
+      "get": {
+        "summary": "Get all cameras",
+        "description": "Retrieve list of all UniFi Protect cameras",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cameras",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtectCamerasResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch cameras",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/protect/cameras/{camera_id}": {
+      "get": {
+        "summary": "Get specific camera",
+        "description": "Retrieve details for a specific camera by ID",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "camera_id",
+            "in": "path",
+            "required": true,
+            "description": "Camera ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Camera details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtectCameraResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Camera not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch camera",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/protect/cameras/{camera_id}/streams": {
+      "get": {
+        "summary": "Get camera streams",
+        "description": "Retrieve RTSP stream URLs for a specific camera",
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "camera_id",
+            "in": "path",
+            "required": true,
+            "description": "Camera ID",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Camera streams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtectStreamsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - invalid or missing API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Camera not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to fetch camera streams",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API key for authentication"
+      }
+    },
+    "schemas": {
+      "WebhookEvent": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Event type"
+          },
+          "camera": {
+            "type": "string",
+            "description": "Camera identifier"
+          }
+        },
+        "additionalProperties": true
+      },
+      "SecuritySweepResult": {
+        "type": "object",
+        "properties": {
+          "runId": {
+            "type": "string"
+          },
+          "ts": {
+            "type": "number"
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Observation"
+            }
+          }
+        }
+      },
+      "Observation": {
+        "type": "object",
+        "properties": {
+          "camera": {
+            "type": "string"
+          },
+          "rule": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string",
+            "enum": ["pass", "warn", "fail"]
+          }
+        }
+      },
+      "ProtectLoginResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ProtectCamerasResponse": {
+        "type": "object",
+        "properties": {
+          "cameras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProtectCamera"
+            }
+          }
+        }
+      },
+      "ProtectCamera": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "host": {
+            "type": "string"
+          },
+          "connectionHost": {
+            "type": "string"
+          },
+          "lastSeen": {
+            "type": "string"
+          },
+          "isPoorNetwork": {
+            "type": "boolean"
+          },
+          "lastRing": {
+            "type": "string"
+          },
+          "videoCodec": {
+            "type": "string"
+          },
+          "wiredConnectionState": {
+            "type": "object"
+          },
+          "wifiConnectionState": {
+            "type": "object"
+          },
+          "talkbackSettings": {
+            "type": "object"
+          },
+          "speakerSettings": {
+            "type": "object"
+          },
+          "smartDetectSettings": {
+            "type": "object",
+            "properties": {
+              "objectTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "autoTrackingObjectTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "autoTrackingWithZoom": {
+                "type": "boolean"
+              },
+              "audioTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "detectionRanges": {
+                "type": "array"
+              }
+            }
+          },
+          "motionZones": {
+            "type": "array"
+          },
+          "smartDetectZones": {
+            "type": "array"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mac": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "isRecording": {
+            "type": "boolean"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProtectChannel"
+            }
+          }
+        }
+      },
+      "ProtectChannel": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "isRtspEnabled": {
+            "type": "boolean"
+          },
+          "rtspAlias": {
+            "type": "string"
+          }
+        }
+      },
+      "ProtectCameraResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProtectCamera"
+          }
+        ]
+      },
+      "ProtectStreamsResponse": {
+        "type": "object",
+        "properties": {
+          "streams": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProtectStream"
+            }
+          }
+        }
+      },
+      "ProtectStream": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

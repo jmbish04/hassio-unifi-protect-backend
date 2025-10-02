@@ -8,6 +8,22 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(req.url);
 
+    // Handle static assets first
+    if (url.pathname.startsWith('/public/') || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/openapi.json') {
+      try {
+        // For root path, serve index.html
+        if (url.pathname === '/') {
+          const indexRequest = new Request(new URL('/index.html', req.url));
+          return await env.ASSETS.fetch(indexRequest);
+        }
+        // Serve other static assets
+        return await env.ASSETS.fetch(req);
+      } catch (error) {
+        console.error('Error serving static asset:', error);
+        return new Response('Asset not found', { status: 404 });
+      }
+    }
+
     if (req.method === "POST" && url.pathname === "/webhook") {
       // Example: HA or Protect -> Worker
       // Expect JSON with {type, camera, event,...}

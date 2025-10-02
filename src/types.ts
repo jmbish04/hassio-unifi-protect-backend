@@ -11,6 +11,9 @@ export interface Env {
   // Queue
   EVENTS_Q: Queue;
 
+  // Static Assets
+  ASSETS: Fetcher;
+
   // Home Assistant
   HA_BASE_URL?: string;
   HA_TOKEN?: string;
