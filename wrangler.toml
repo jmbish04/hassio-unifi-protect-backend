@@ -1,0 +1,46 @@
+name = "unifi-protect-api"
+main = "src/index.ts"
+compatibility_date = "2025-10-01"
+
+# Public entrypoints
+routes = [
+  # Webhook endpoint
+  { pattern = "protect.hacolby.app/webhook", zone_name = "hacolby.app" },
+  # Optional: signed image fetch proxy
+  { pattern = "protect.hacolby.app/fetch/*", zone_name = "hacolby.app" }
+]
+
+# Cron (every 15 minutes) - check patrol configs and scheduled automations
+triggers = { crons = ["*/15 * * * *"] }
+
+# D1 database for events/labels
+[[d1_databases]]
+binding = "DB"
+database_name = "protect_events"
+database_id = "9e5b6c89-7a69-46ac-8deb-ed009ee0a774"
+migrations_dir = "migrations"
+
+# R2 bucket for images/clips
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "protect-media"
+
+# Queue for async processing
+[[queues.producers]]
+binding = "EVENTS_Q"
+queue = "events-protect-api-q"
+
+[[queues.consumers]]
+queue = "events-protect-api-q"                # create this queue name in dashboard
+max_batch_size = 10
+max_batch_timeout = 2
+max_retries = 5
+dead_letter_queue = "events-dlq"  # optional
+
+# Workers AI (if you use Cloudflare's models)
+[ai]
+binding = "AI"
+
+# If your Protect hostname is behind Cloudflare Access, add these as secrets:
+# wrangler secret put ACCESS_CLIENT_ID
+# wrangler secret put ACCESS_CLIENT_SECRET
