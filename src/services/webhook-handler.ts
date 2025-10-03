@@ -32,41 +32,127 @@ export class WebhookHandlerService {
    * Process incoming webhook event
    */
   async processWebhookEvent(event: WebhookEvent): Promise<void> {
+    const processingId = crypto.randomUUID();
+    const startTime = Date.now();
+
     try {
-      // Get camera enum_id from camera_id
-      const camera = await this.getCameraByEnumId(event.cameraId);
-      if (!camera) {
-        console.warn(`Camera not found: ${event.cameraId}`);
-        return;
-      }
+      console.log(`[${processingId}] Starting webhook event processing`, {
+        eventId: event.eventId,
+        cameraId: event.cameraId,
+        eventType: event.eventType,
+        timestamp: event.timestamp,
+        hasThumbnail: !!event.thumbnail,
+        processingStartTime: new Date().toISOString()
+      });
+
+      // For now, use the cameraId directly as the camera_enum_id
+      // In the future, we could populate a cameras table or validate against Protect API
+      const cameraEnumId = event.cameraId;
 
       // Save webhook event to D1
-      await this.saveWebhookEvent(event, camera.enum_id);
+      console.log(`[${processingId}] Saving webhook event to D1 database`, {
+        eventId: event.eventId,
+        cameraEnumId,
+        eventType: event.eventType
+      });
+
+      await this.saveWebhookEvent(event, cameraEnumId);
+
+      const dbSaveTime = Date.now() - startTime;
+      console.log(`[${processingId}] Webhook event saved to D1 successfully`, {
+        eventId: event.eventId,
+        dbSaveTimeMs: dbSaveTime
+      });
 
       // Process thumbnail if present
       let thumbnailR2Key: string | null = null;
       if (event.thumbnail) {
-        thumbnailR2Key = await this.saveThumbnail(camera.enum_id, event.eventId, event.thumbnail);
+        console.log(`[${processingId}] Processing thumbnail for webhook event`, {
+          eventId: event.eventId,
+          thumbnailSize: event.thumbnail.length,
+          cameraEnumId
+        });
+
+        const thumbnailStartTime = Date.now();
+        thumbnailR2Key = await this.saveThumbnail(cameraEnumId, event.eventId, event.thumbnail);
+        const thumbnailTime = Date.now() - thumbnailStartTime;
+
+        console.log(`[${processingId}] Thumbnail saved to R2 successfully`, {
+          eventId: event.eventId,
+          thumbnailR2Key,
+          thumbnailProcessingTimeMs: thumbnailTime
+        });
+      } else {
+        console.log(`[${processingId}] No thumbnail to process`, {
+          eventId: event.eventId
+        });
       }
 
       // Update webhook event with thumbnail R2 key
       if (thumbnailR2Key) {
+        console.log(`[${processingId}] Updating webhook event with thumbnail R2 key`, {
+          eventId: event.eventId,
+          thumbnailR2Key
+        });
         await this.updateWebhookEventThumbnail(event.eventId, thumbnailR2Key);
       }
 
       // Get security patrol configurations for this camera
-      const patrolConfigs = await this.getSecurityPatrolConfigs(camera.enum_id, event.eventType);
+      console.log(`[${processingId}] Checking security patrol configurations`, {
+        eventId: event.eventId,
+        cameraEnumId,
+        eventType: event.eventType
+      });
+
+      const patrolConfigs = await this.getSecurityPatrolConfigs(cameraEnumId, event.eventType);
+
+      console.log(`[${processingId}] Found security patrol configurations`, {
+        eventId: event.eventId,
+        configCount: patrolConfigs.length,
+        configs: patrolConfigs.map(c => ({ id: c.id, name: c.job_name, type: c.ai_analysis_type }))
+      });
 
       // Process each configuration
       for (const config of patrolConfigs) {
+        console.log(`[${processingId}] Processing security patrol configuration`, {
+          eventId: event.eventId,
+          configId: config.id,
+          configName: config.job_name,
+          aiAnalysisType: config.ai_analysis_type
+        });
+
         await this.processSecurityPatrol(config, event, thumbnailR2Key);
       }
 
       // Mark webhook as processed
+      console.log(`[${processingId}] Marking webhook as processed`, {
+        eventId: event.eventId
+      });
       await this.markWebhookProcessed(event.eventId);
 
+      const totalProcessingTime = Date.now() - startTime;
+      console.log(`[${processingId}] Webhook event processing completed successfully`, {
+        eventId: event.eventId,
+        cameraId: event.cameraId,
+        eventType: event.eventType,
+        totalProcessingTimeMs: totalProcessingTime,
+        hasThumbnail: !!thumbnailR2Key,
+        thumbnailR2Key,
+        patrolConfigsProcessed: patrolConfigs.length,
+        processingEndTime: new Date().toISOString()
+      });
+
     } catch (error) {
-      console.error('Error processing webhook event:', error);
+      const totalProcessingTime = Date.now() - startTime;
+      console.error(`[${processingId}] Error processing webhook event`, {
+        eventId: event.eventId,
+        cameraId: event.cameraId,
+        eventType: event.eventType,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        totalProcessingTimeMs: totalProcessingTime,
+        processingEndTime: new Date().toISOString()
+      });
       throw error;
     }
   }
@@ -85,19 +171,54 @@ export class WebhookHandlerService {
    * Save webhook event to D1
    */
   private async saveWebhookEvent(event: WebhookEvent, cameraEnumId: string): Promise<void> {
-    const stmt = this.env.DB.prepare(`
-      INSERT INTO webhook_events (event_id, camera_enum_id, event_type, timestamp, raw_payload, thumbnail_r2_key)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
+    const saveId = crypto.randomUUID();
+    const startTime = Date.now();
 
-    await stmt.bind(
-      event.eventId,
-      cameraEnumId,
-      event.eventType,
-      event.timestamp,
-      JSON.stringify(event.rawPayload),
-      null // Will be updated if thumbnail is saved
-    ).run();
+    try {
+      console.log(`[${saveId}] Preparing to save webhook event to D1`, {
+        eventId: event.eventId,
+        cameraEnumId,
+        eventType: event.eventType,
+        timestamp: event.timestamp,
+        rawPayloadSize: JSON.stringify(event.rawPayload).length
+      });
+
+      const stmt = this.env.DB.prepare(`
+        INSERT INTO webhook_events (event_id, camera_enum_id, event_type, timestamp, raw_payload, thumbnail_r2_key)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `);
+
+      const result = await stmt.bind(
+        event.eventId,
+        cameraEnumId,
+        event.eventType,
+        event.timestamp,
+        JSON.stringify(event.rawPayload),
+        null // Will be updated if thumbnail is saved
+      ).run();
+
+      const saveTime = Date.now() - startTime;
+      console.log(`[${saveId}] Webhook event saved to D1 successfully`, {
+        eventId: event.eventId,
+        cameraEnumId,
+        eventType: event.eventType,
+        dbResult: {
+          meta: result.meta
+        },
+        saveTimeMs: saveTime
+      });
+    } catch (error) {
+      const saveTime = Date.now() - startTime;
+      console.error(`[${saveId}] Error saving webhook event to D1`, {
+        eventId: event.eventId,
+        cameraEnumId,
+        eventType: event.eventType,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        saveTimeMs: saveTime
+      });
+      throw error;
+    }
   }
 
   /**

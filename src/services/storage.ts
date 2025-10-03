@@ -5,8 +5,8 @@ export class StorageService {
 
   async saveRun(run: PatrolRun): Promise<void> {
     await this.env.DB.prepare(
-      "INSERT INTO patrol_runs (id, ts, trigger, summary) VALUES (?, ?, ?, ?)"
-    ).bind(run.id, run.ts, run.trigger, run.summary).run();
+      "INSERT INTO patrol_runs (id, trigger_source, started_at, summary) VALUES (?, ?, ?, ?)"
+    ).bind(run.id, run.trigger, run.ts, run.summary).run();
   }
 
   async saveObservation(observation: ObservationRecord): Promise<void> {

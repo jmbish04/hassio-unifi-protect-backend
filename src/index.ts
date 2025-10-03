@@ -29,22 +29,6 @@ export default {
       }
     }
 
-    if (req.method === "POST" && url.pathname === "/webhook") {
-      // Example: HA or Protect -> Worker
-      // Expect JSON with {type, camera, event,...}
-      const event = await req.json().catch(() => null) as WebhookEvent | null;
-      if (!event) return new Response("bad json", { status: 400 });
-
-      // reactively run a focused sweep
-      const securitySweep = new SecuritySweepService(env);
-      ctx.waitUntil(
-        securitySweep.runSecuritySweep({
-          trigger: `event:${event.type}`,
-          focusCamera: event.cameraId || null
-        })
-      );
-      return new Response("ok");
-    }
 
     if (url.pathname === "/agent/security_sweep") {
       // API-triggered on-demand sweep (GET or POST)
@@ -205,9 +189,30 @@ export default {
 
     // Webhook endpoints
     if (url.pathname === '/webhook' && req.method === 'POST') {
+      const requestId = crypto.randomUUID();
+      const startTime = Date.now();
+
       try {
+        console.log(`[${requestId}] Webhook POST received`, {
+          timestamp: new Date().toISOString(),
+          userAgent: req.headers.get('user-agent'),
+          contentType: req.headers.get('content-type'),
+          contentLength: req.headers.get('content-length'),
+          origin: req.headers.get('origin'),
+          referer: req.headers.get('referer')
+        });
+
         const webhookHandler = new WebhookHandlerService(env);
         const body = await req.json() as any;
+
+        console.log(`[${requestId}] Webhook payload parsed`, {
+          eventId: body.eventId || 'generated',
+          cameraId: body.cameraId || body.camera_id || 'unknown',
+          eventType: body.eventType || body.event_type || 'motion',
+          hasThumbnail: !!body.thumbnail,
+          payloadSize: JSON.stringify(body).length,
+          rawPayload: body
+        });
 
         // Parse webhook event
         const webhookEvent: WebhookEvent = {
@@ -220,14 +225,65 @@ export default {
           type: body.type || body.eventType || body.event_type || 'motion'
         };
 
-        // Process webhook asynchronously
-        ctx.waitUntil(webhookHandler.processWebhookEvent(webhookEvent));
+        console.log(`[${requestId}] Webhook event structured`, {
+          eventId: webhookEvent.eventId,
+          cameraId: webhookEvent.cameraId,
+          eventType: webhookEvent.eventType,
+          timestamp: webhookEvent.timestamp,
+          hasThumbnail: !!webhookEvent.thumbnail,
+          thumbnailSize: webhookEvent.thumbnail ? webhookEvent.thumbnail.length : 0
+        });
 
-        return json({ success: true, message: 'Webhook received and queued for processing' });
+        // Process webhook asynchronously
+        ctx.waitUntil(webhookHandler.processWebhookEvent(webhookEvent).then(() => {
+          const processingTime = Date.now() - startTime;
+          console.log(`[${requestId}] Webhook processing completed successfully`, {
+            processingTimeMs: processingTime,
+            eventId: webhookEvent.eventId,
+            cameraId: webhookEvent.cameraId,
+            eventType: webhookEvent.eventType
+          });
+        }).catch(error => {
+          const processingTime = Date.now() - startTime;
+          console.error(`[${requestId}] Webhook processing failed`, {
+            error: error.message,
+            stack: error.stack,
+            processingTimeMs: processingTime,
+            eventId: webhookEvent.eventId,
+            cameraId: webhookEvent.cameraId,
+            eventType: webhookEvent.eventType
+          });
+        }));
+
+        const responseTime = Date.now() - startTime;
+        console.log(`[${requestId}] Webhook response sent`, {
+          status: 200,
+          responseTimeMs: responseTime,
+          eventId: webhookEvent.eventId
+        });
+
+        return json({
+          success: true,
+          message: 'Webhook received and queued for processing',
+          requestId,
+          eventId: webhookEvent.eventId
+        });
       } catch (error) {
-        console.error('Webhook processing error:', error);
+        const responseTime = Date.now() - startTime;
+        console.error(`[${requestId}] Webhook processing error`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          responseTimeMs: responseTime,
+          userAgent: req.headers.get('user-agent'),
+          contentType: req.headers.get('content-type')
+        });
+
         return new Response(
-          JSON.stringify({ error: 'Failed to process webhook' }),
+          JSON.stringify({
+            error: 'Failed to process webhook',
+            requestId,
+            message: error instanceof Error ? error.message : 'Unknown error'
+          }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
       }
@@ -237,10 +293,10 @@ export default {
       try {
         // Extract the R2 key from the path
         const r2Key = url.pathname.replace('/fetch/', '');
-        
+
         // Get object from R2
         const object = await env.BUCKET.get(r2Key);
-        
+
         if (!object) {
           return new Response('Not found', { status: 404 });
         }
@@ -260,29 +316,60 @@ export default {
 
     // Webhook events endpoint
     if (url.pathname === '/webhook/events' && req.method === 'GET') {
+      const requestId = crypto.randomUUID();
+      const startTime = Date.now();
+
       try {
+        console.log(`[${requestId}] Webhook events GET request received`, {
+          timestamp: new Date().toISOString(),
+          userAgent: req.headers.get('user-agent'),
+          origin: req.headers.get('origin'),
+          referer: req.headers.get('referer')
+        });
+
         // Validate API key
         const apiKey = req.headers.get('x-api-key');
         if (!apiKey || apiKey !== env.WORKER_API_KEY) {
+          console.log(`[${requestId}] Unauthorized webhook events request`, {
+            hasApiKey: !!apiKey,
+            apiKeyPrefix: apiKey ? apiKey.substring(0, 4) + '...' : 'none'
+          });
           return new Response('Unauthorized', { status: 401 });
         }
 
+        console.log(`[${requestId}] Fetching webhook events from D1`, {
+          apiKeyPrefix: apiKey.substring(0, 4) + '...'
+        });
+
         // Get webhook events from D1, ordered by timestamp, limit 20
         const stmt = env.DB.prepare(`
-          SELECT * FROM webhook_events 
-          ORDER BY timestamp DESC 
+          SELECT * FROM webhook_events
+          ORDER BY timestamp DESC
           LIMIT 20
         `);
-        
+
         const result = await stmt.all();
-        
-        return json({ 
-          success: true, 
+        const fetchTime = Date.now() - startTime;
+
+        console.log(`[${requestId}] Webhook events fetched successfully`, {
+          eventCount: result.results?.length || 0,
+          fetchTimeMs: fetchTime,
+          dbMeta: result.meta
+        });
+
+        return json({
+          success: true,
           events: result.results || [],
-          count: result.results?.length || 0
+          count: result.results?.length || 0,
+          requestId
         });
       } catch (error) {
-        console.error('Webhook events fetch error:', error);
+        const fetchTime = Date.now() - startTime;
+        console.error(`[${requestId}] Webhook events fetch error`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          fetchTimeMs: fetchTime
+        });
         return new Response('Internal server error', { status: 500 });
       }
     }
