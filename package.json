@@ -17,7 +17,7 @@
 		"commit:gh": "git add . && git commit -m \"Update: $(date '+%Y-%m-%d %H:%M:%S')\" && git push origin master"
 	},
 	"devDependencies": {
-		"@cloudflare/vitest-pool-workers": "^0.8.19",
+		"@cloudflare/vitest-pool-workers": "^0.9.9",
 		"@vitest/coverage-v8": "^3.2.0",
 		"@vitest/ui": "^3.2.0",
 		"typescript": "^5.5.2",
