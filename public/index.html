@@ -561,14 +561,14 @@
                 }
 
                 const data = await response.json();
-                displayCameras(data.cameras || []);
+                await displayCameras(data.cameras || []);
             } catch (error) {
                 document.getElementById('cameraSection').innerHTML =
                     `<div class="error">Error loading cameras: ${error.message}</div>`;
             }
         }
 
-        function displayCameras(cameras) {
+        async function displayCameras(cameras) {
             if (cameras.length === 0) {
                 document.getElementById('cameraSection').innerHTML =
                     '<div class="loading">No cameras found</div>';
@@ -578,16 +578,42 @@
             const cameraGrid = document.createElement('div');
             cameraGrid.className = 'camera-grid';
 
-            cameras.forEach(camera => {
+            // Process each camera and fetch its streams
+            for (const camera of cameras) {
                 const cameraCard = document.createElement('div');
                 cameraCard.className = 'camera-card';
 
                 const statusClass = camera.state === 'CONNECTED' ? 'status-success' : 'status-error';
                 const statusText = camera.state === 'CONNECTED' ? 'Online' : 'Offline';
 
+                // Fetch streams for this camera
+                let streamsInfo = 'Loading streams...';
+                try {
+                    const streamsResponse = await fetch(`/protect/cameras/${camera.id}/streams`, {
+                        headers: {
+                            'x-api-key': apiKey
+                        }
+                    });
+                    
+                    if (streamsResponse.ok) {
+                        const streamsData = await streamsResponse.json();
+                        const streams = streamsData.streams || [];
+                        if (streams.length > 0) {
+                            const enabledStreams = streams.filter(s => s.enabled);
+                            streamsInfo = `Streams: ${enabledStreams.length}/${streams.length} enabled`;
+                        } else {
+                            streamsInfo = 'No streams available';
+                        }
+                    } else {
+                        streamsInfo = 'Streams: Error loading';
+                    }
+                } catch (error) {
+                    streamsInfo = 'Streams: Error loading';
+                }
+
                 cameraCard.innerHTML = `
                     <div class="camera-feed">
-                        <div>Camera Feed<br><small>RTSP: ${camera.channels?.[0]?.isRtspEnabled ? 'Available' : 'Not Available'}</small></div>
+                        <div>Camera Feed<br><small>${streamsInfo}</small></div>
                     </div>
                     <div class="camera-info">
                         <div class="camera-name">${camera.name || 'Unknown Camera'}</div>
@@ -602,7 +628,7 @@
                 `;
 
                 cameraGrid.appendChild(cameraCard);
-            });
+            }
 
             document.getElementById('cameraSection').innerHTML = '';
             document.getElementById('cameraSection').appendChild(cameraGrid);

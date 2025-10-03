@@ -171,23 +171,30 @@ export class ProtectApiService {
   }
 
   /**
-   * Get camera streams for a specific camera
+   * Get camera streams for a specific camera using the new API endpoint
    */
   async getCameraStreams(cameraId: string): Promise<ProtectStream[]> {
-    const camera = await this.getCamera(cameraId);
-    if (!camera) {
-      throw new Error(`Camera with ID ${cameraId} not found`);
+    const streamsUrl = `${this.env.PROTECT_API}/protect/cameras/${cameraId}/streams`;
+    
+    try {
+      const response = await fetch(streamsUrl, {
+        method: 'GET',
+        headers: {
+          'x-api-key': this.env.PROTECT_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch camera streams: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json() as { streams?: ProtectStream[] };
+      return data.streams || [];
+    } catch (error) {
+      console.error('Camera streams fetch error:', error);
+      throw new Error(`Failed to fetch camera streams: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-
-    const protectHost = this.env.PROTECT_API.split('//')[1];
-
-    return camera.channels.map(channel => ({
-      name: channel.name || 'Unknown',
-      enabled: channel.isRtspEnabled || false,
-      url: channel.isRtspEnabled
-        ? `rtsp://${protectHost}:7447/${channel.rtspAlias}`
-        : 'N/A'
-    }));
   }
 
   /**
