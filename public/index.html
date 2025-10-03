@@ -250,6 +250,89 @@
             color: #666;
         }
 
+        .webhook-events {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .webhook-event {
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1rem;
+            transition: background-color 0.2s ease;
+        }
+
+        .webhook-event:hover {
+            background: #f8f9fa;
+        }
+
+        .webhook-event:last-child {
+            border-bottom: none;
+        }
+
+        .webhook-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .webhook-event-type {
+            background: #667eea;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .webhook-timestamp {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .webhook-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .webhook-detail {
+            font-size: 0.9rem;
+        }
+
+        .webhook-detail strong {
+            color: #333;
+        }
+
+        .webhook-thumbnail {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+
+        .webhook-raw {
+            background: #f1f3f4;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            max-height: 100px;
+            overflow-y: auto;
+            margin-top: 0.5rem;
+        }
+
+        .webhook-refresh {
+            margin-bottom: 1rem;
+        }
+
         .endpoint-list {
             list-style: none;
         }
@@ -344,6 +427,7 @@
                 <li><a href="#home">Home</a></li>
                 <li><a href="#health">Health Check</a></li>
                 <li><a href="#cameras">Cameras</a></li>
+                <li><a href="#webhooks">Webhooks</a></li>
                 <li><a href="#api">API</a></li>
                 <li><a href="/openapi.json" target="_blank">OpenAPI Schema</a></li>
             </ul>
@@ -404,6 +488,13 @@
                 <h2>Camera Feeds</h2>
                 <div id="cameraSection">
                     <div class="loading">Enter API key above to view camera feeds</div>
+                </div>
+            </section>
+
+            <section id="webhooks" class="section">
+                <h2>Webhook Events</h2>
+                <div id="webhookSection">
+                    <div class="loading">Enter API key above to view webhook events</div>
                 </div>
             </section>
 
@@ -473,6 +564,7 @@
                 input.value = '';
                 runHealthCheck();
                 loadCameras();
+                loadWebhookEvents();
             } else {
                 alert('Please enter a valid API key');
             }
@@ -484,6 +576,7 @@
                 document.getElementById('apiKey').value = apiKey;
                 runHealthCheck();
                 loadCameras();
+                loadWebhookEvents();
             }
         });
 
@@ -670,6 +763,104 @@
             document.getElementById('cameraSection').appendChild(cameraGrid);
         }
 
+        // Load webhook events
+        async function loadWebhookEvents() {
+            if (!apiKey) {
+                document.getElementById('webhookSection').innerHTML =
+                    '<div class="loading">Enter API key above to view webhook events</div>';
+                return;
+            }
+
+            document.getElementById('webhookSection').innerHTML =
+                '<div class="loading">Loading webhook events...</div>';
+
+            try {
+                const response = await fetch('/webhook/events', {
+                    headers: {
+                        'x-api-key': apiKey
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                await displayWebhookEvents(data.events || []);
+            } catch (error) {
+                document.getElementById('webhookSection').innerHTML =
+                    `<div class="error">Error loading webhook events: ${error.message}</div>`;
+            }
+        }
+
+        async function displayWebhookEvents(events) {
+            if (events.length === 0) {
+                document.getElementById('webhookSection').innerHTML =
+                    '<div class="loading">No webhook events found</div>';
+                return;
+            }
+
+            const webhookContainer = document.createElement('div');
+            webhookContainer.innerHTML = `
+                <div class="webhook-refresh">
+                    <button onclick="loadWebhookEvents()" class="btn">Refresh Events</button>
+                </div>
+            `;
+
+            const webhookEvents = document.createElement('div');
+            webhookEvents.className = 'webhook-events';
+
+            events.forEach(event => {
+                const eventElement = document.createElement('div');
+                eventElement.className = 'webhook-event';
+
+                const timestamp = new Date(event.timestamp).toLocaleString();
+                const eventType = event.eventType || event.type || 'unknown';
+                const cameraId = event.cameraId || event.camera || 'unknown';
+
+                let thumbnailHtml = '';
+                if (event.thumbnail_r2_key) {
+                    thumbnailHtml = `
+                        <img src="/fetch/${event.thumbnail_r2_key}" 
+                             alt="Event thumbnail" 
+                             class="webhook-thumbnail"
+                             onerror="this.style.display='none'">
+                    `;
+                }
+
+                eventElement.innerHTML = `
+                    <div class="webhook-header">
+                        <span class="webhook-event-type">${eventType.toUpperCase()}</span>
+                        <span class="webhook-timestamp">${timestamp}</span>
+                    </div>
+                    <div class="webhook-details">
+                        <div class="webhook-detail">
+                            <strong>Event ID:</strong> ${event.eventId || event.id || 'N/A'}
+                        </div>
+                        <div class="webhook-detail">
+                            <strong>Camera ID:</strong> ${cameraId}
+                        </div>
+                        <div class="webhook-detail">
+                            <strong>Processed:</strong> ${event.processed ? 'Yes' : 'No'}
+                        </div>
+                        <div class="webhook-detail">
+                            <strong>Patrol Run:</strong> ${event.patrol_run_id || 'N/A'}
+                        </div>
+                    </div>
+                    ${thumbnailHtml}
+                    <div class="webhook-raw">
+                        <strong>Raw Payload:</strong><br>
+                        <pre>${JSON.stringify(event.rawPayload || event, null, 2)}</pre>
+                    </div>
+                `;
+
+                webhookEvents.appendChild(eventElement);
+            });
+
+            webhookContainer.appendChild(webhookEvents);
+            document.getElementById('webhookSection').innerHTML = '';
+            document.getElementById('webhookSection').appendChild(webhookContainer);
+        }
 
         // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

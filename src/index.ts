@@ -237,10 +237,10 @@ export default {
       try {
         // Extract the R2 key from the path
         const r2Key = url.pathname.replace('/fetch/', '');
-
+        
         // Get object from R2
         const object = await env.BUCKET.get(r2Key);
-
+        
         if (!object) {
           return new Response('Not found', { status: 404 });
         }
@@ -254,6 +254,35 @@ export default {
         });
       } catch (error) {
         console.error('R2 fetch error:', error);
+        return new Response('Internal server error', { status: 500 });
+      }
+    }
+
+    // Webhook events endpoint
+    if (url.pathname === '/webhook/events' && req.method === 'GET') {
+      try {
+        // Validate API key
+        const apiKey = req.headers.get('x-api-key');
+        if (!apiKey || apiKey !== env.WORKER_API_KEY) {
+          return new Response('Unauthorized', { status: 401 });
+        }
+
+        // Get webhook events from D1, ordered by timestamp, limit 20
+        const stmt = env.DB.prepare(`
+          SELECT * FROM webhook_events 
+          ORDER BY timestamp DESC 
+          LIMIT 20
+        `);
+        
+        const result = await stmt.all();
+        
+        return json({ 
+          success: true, 
+          events: result.results || [],
+          count: result.results?.length || 0
+        });
+      } catch (error) {
+        console.error('Webhook events fetch error:', error);
         return new Response('Internal server error', { status: 500 });
       }
     }
