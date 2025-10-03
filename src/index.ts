@@ -9,12 +9,16 @@ export default {
     const url = new URL(req.url);
 
     // Handle static assets first
-    if (url.pathname.startsWith('/public/') || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/openapi.json') {
+    if (url.pathname.startsWith('/public/') || url.pathname === '/' || url.pathname === '/index.html' || url.pathname === '/openapi.json' || url.pathname === '/favicon.ico') {
       try {
         // For root path, serve index.html
         if (url.pathname === '/') {
           const indexRequest = new Request(new URL('/index.html', req.url));
           return await env.ASSETS.fetch(indexRequest);
+        }
+        // For favicon, return a simple 204 No Content response
+        if (url.pathname === '/favicon.ico') {
+          return new Response(null, { status: 204 });
         }
         // Serve other static assets
         return await env.ASSETS.fetch(req);

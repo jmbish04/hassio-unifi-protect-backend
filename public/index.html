@@ -364,9 +364,12 @@
             <section id="api-key" class="section">
                 <h2>API Authentication</h2>
                 <div class="api-key-section">
-                    <label for="apiKey">Enter your API key to access protected endpoints:</label>
-                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your API key...">
+                    <label for="apiKey">Enter your Worker API key to access protected endpoints:</label>
+                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your Worker API key...">
                     <button onclick="setApiKey()" class="btn">Set API Key</button>
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                        <strong>Note:</strong> This is the WORKER_API_KEY for authenticating with this worker, not the UniFi Protect API key.
+                    </p>
                 </div>
             </section>
 
@@ -484,15 +487,16 @@
             }
         });
 
+        // Status configuration
+        const statuses = {
+            api: { element: 'apiStatus', text: 'apiStatusText' },
+            protect: { element: 'protectStatus', text: 'protectStatusText' },
+            db: { element: 'dbStatus', text: 'dbStatusText' },
+            storage: { element: 'storageStatus', text: 'storageStatusText' }
+        };
+
         // Health check function
         async function runHealthCheck() {
-            const statuses = {
-                api: { element: 'apiStatus', text: 'apiStatusText' },
-                protect: { element: 'protectStatus', text: 'protectStatusText' },
-                db: { element: 'dbStatus', text: 'dbStatusText' },
-                storage: { element: 'storageStatus', text: 'storageStatusText' }
-            };
-
             // Check API status
             try {
                 const response = await fetch('/agent/security_sweep');
@@ -505,7 +509,11 @@
             try {
                 const response = await fetch('/protect/login', { method: 'POST' });
                 const data = await response.json();
-                updateStatus('protect', response.ok, response.ok ? 'Connected' : 'Failed');
+                if (response.ok) {
+                    updateStatus('protect', true, 'Connected');
+                } else {
+                    updateStatus('protect', false, data.error || 'Failed');
+                }
             } catch (error) {
                 updateStatus('protect', false, 'Offline');
             }

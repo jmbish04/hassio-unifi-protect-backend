@@ -7,14 +7,22 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"test": "vitest",
+		"test:run": "vitest run",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest run --coverage",
+		"test:ui": "vitest --ui",
 		"cf-typegen": "wrangler types",
+		"migrate:local": "wrangler d1 migrations apply DB --local",
 		"migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"commit:gh": "git add . && git commit -m \"Update: $(date '+%Y-%m-%d %H:%M:%S')\" && git push origin master"
 	},
 	"devDependencies": {
 		"@cloudflare/vitest-pool-workers": "^0.8.19",
+		"@vitest/coverage-v8": "^3.2.0",
+		"@vitest/ui": "^3.2.0",
 		"typescript": "^5.5.2",
 		"vitest": "~3.2.0",
+		"vitest-environment-miniflare": "^2.14.4",
 		"wrangler": "^4.40.3"
 	},
 	"packageManager": "pnpm@10.17.1+sha512.17c560fca4867ae9473a3899ad84a88334914f379be46d455cbf92e5cf4b39d34985d452d2583baf19967fa76cb5c17bc9e245529d0b98745721aa7200ecaf7a"

@@ -27,8 +27,8 @@ export interface Env {
   ACCESS_CLIENT_ID?: string;
   ACCESS_CLIENT_SECRET?: string;
 
-  // Cameras
-  CAMERA_IDS?: string;
+  // Worker API
+  WORKER_API_KEY: string;
 
   // Notifications
   NTFY_TOPIC_URL?: string;
