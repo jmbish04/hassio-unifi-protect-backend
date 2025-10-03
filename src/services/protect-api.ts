@@ -132,9 +132,16 @@ export class ProtectApiService {
    * Get all cameras from UniFi Protect
    */
   async getCameras(): Promise<ProtectCamera[]> {
+    // Check if PROTECT_API is configured
+    if (!this.env.PROTECT_API) {
+      console.error('PROTECT_API environment variable is not set');
+      throw new Error('PROTECT_API environment variable is not configured');
+    }
+
     const camerasUrl = `${this.env.PROTECT_API}/protect/cameras`;
 
     try {
+      console.log(`Fetching cameras from: ${camerasUrl}`);
       const response = await fetch(camerasUrl, {
         method: 'GET',
         headers: {
@@ -143,91 +150,43 @@ export class ProtectApiService {
         },
       });
 
+      console.log(`Camera API response status: ${response.status}`);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Camera API error: ${response.status} ${errorText}`);
         throw new Error(`Failed to fetch cameras: ${response.status} ${errorText}`);
       }
 
       const data = await response.json() as { items?: any[] };
       const items = data.items || [];
 
-      // If no cameras returned, provide some test data for development
+      console.log(`Found ${items.length} cameras in API response`);
+
+      // If no cameras returned, log the issue but don't provide test data
       if (items.length === 0) {
-        console.log('No cameras found in API response, providing test data');
-        return [
-          {
-            id: 'cam_driveway',
-            name: 'Driveway',
-            type: 'UVC-G4',
-            state: 'CONNECTED',
-            mac: '00:11:22:33:44:55',
-            isRecording: true,
-            host: 'unifi.local',
-            connectionHost: 'unifi.local',
-            lastSeen: new Date().toISOString(),
-            isPoorNetwork: false,
-            lastRing: '',
-            videoCodec: 'H.264',
-            wiredConnectionState: {},
-            wifiConnectionState: {},
-            talkbackSettings: {},
-            speakerSettings: {},
-            smartDetectSettings: {
-              objectTypes: ['person', 'vehicle'],
-              autoTrackingObjectTypes: ['person'],
-              autoTrackingWithZoom: false,
-              audioTypes: [],
-              detectionRanges: []
-            },
-            motionZones: [],
-            smartDetectZones: [],
-            channels: []
-          },
-          {
-            id: 'cam_front_door',
-            name: 'Front Door',
-            type: 'UVC-G3',
-            state: 'CONNECTED',
-            mac: '00:11:22:33:44:56',
-            isRecording: true,
-            host: 'unifi.local',
-            connectionHost: 'unifi.local',
-            lastSeen: new Date().toISOString(),
-            isPoorNetwork: false,
-            lastRing: '',
-            videoCodec: 'H.264',
-            wiredConnectionState: {},
-            wifiConnectionState: {},
-            talkbackSettings: {},
-            speakerSettings: {},
-            smartDetectSettings: {
-              objectTypes: ['person'],
-              autoTrackingObjectTypes: ['person'],
-              autoTrackingWithZoom: false,
-              audioTypes: [],
-              detectionRanges: []
-            },
-            motionZones: [],
-            smartDetectZones: [],
-            channels: []
-          }
-        ];
+        console.warn('No cameras found in API response. This could indicate:');
+        console.warn('1. No cameras are configured in UniFi Protect');
+        console.warn('2. API authentication is failing');
+        console.warn('3. API endpoint is incorrect');
+        console.warn('4. Cameras are not online');
+        return [];
       }
 
-      // Convert new API format to our internal format
-      return items.map(item => ({
+      // Convert API format to our internal format
+      const cameras = items.map(item => ({
         id: item.camera_id,
-        name: item.name,
+        name: item.name || 'Unknown Camera',
         type: item.model || 'Unknown',
         state: item.is_online ? 'CONNECTED' : 'DISCONNECTED',
-        mac: '', // Not available in new API
-        isRecording: false, // Not available in new API
-        host: '',
-        connectionHost: '',
+        mac: '', // Not available in this API
+        isRecording: false, // Not available in this API
+        host: '', // Not available in this API
+        connectionHost: '', // Not available in this API
         lastSeen: new Date().toISOString(),
-        isPoorNetwork: false,
-        lastRing: '',
-        videoCodec: '',
+        isPoorNetwork: false, // Not available in this API
+        lastRing: '', // Not available in this API
+        videoCodec: '', // Not available in this API
         wiredConnectionState: {},
         wifiConnectionState: {},
         talkbackSettings: {},
@@ -243,6 +202,9 @@ export class ProtectApiService {
         smartDetectZones: [],
         channels: []
       }));
+
+      console.log(`Successfully processed ${cameras.length} cameras`);
+      return cameras;
     } catch (error) {
       console.error('Cameras fetch error:', error);
       throw new Error(`Failed to fetch cameras: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -261,9 +223,16 @@ export class ProtectApiService {
    * Get camera streams for a specific camera using the new API endpoint
    */
   async getCameraStreams(cameraId: string): Promise<ProtectStream[]> {
+    // Check if PROTECT_API is configured
+    if (!this.env.PROTECT_API) {
+      console.error('PROTECT_API environment variable is not set');
+      throw new Error('PROTECT_API environment variable is not configured');
+    }
+
     const streamsUrl = `${this.env.PROTECT_API}/protect/cameras/${cameraId}/streams`;
 
     try {
+      console.log(`Fetching streams from: ${streamsUrl}`);
       const response = await fetch(streamsUrl, {
         method: 'GET',
         headers: {
@@ -271,15 +240,20 @@ export class ProtectApiService {
         },
       });
 
+      console.log(`Streams API response status: ${response.status}`);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error(`Streams API error: ${response.status} ${errorText}`);
         throw new Error(`Failed to fetch camera streams: ${response.status} ${errorText}`);
       }
 
       const data = await response.json() as { streams?: any };
       const streams = data.streams || {};
 
-      // Convert new API format to our internal format
+      console.log(`Streams data received:`, streams);
+
+      // Convert API format to our internal format
       const protectStreams: ProtectStream[] = [];
 
       if (streams.vendor_rtsp_url) {
@@ -298,40 +272,19 @@ export class ProtectApiService {
         });
       }
 
-      // If no streams found, provide test data
+      console.log(`Processed ${protectStreams.length} streams`);
+
+      // If no streams found, return empty array instead of test data
       if (protectStreams.length === 0) {
-        console.log('No streams found in API response, providing test data');
-        return [
-          {
-            name: 'RTSP Stream',
-            enabled: true,
-            url: `rtsp://unifi.local:7447/${cameraId}`
-          },
-          {
-            name: 'HLS Stream',
-            enabled: true,
-            url: `https://unifi-cameras.hacolby.app/proxy/hls/${cameraId}/master.m3u8`
-          }
-        ];
+        console.warn('No streams found in API response');
+        return [];
       }
 
       return protectStreams;
     } catch (error) {
       console.error('Camera streams fetch error:', error);
-      // If API fails, provide test data for development
-      console.log('API failed, providing test stream data');
-      return [
-        {
-          name: 'RTSP Stream',
-          enabled: true,
-          url: `rtsp://unifi.local:7447/${cameraId}`
-        },
-        {
-          name: 'HLS Stream',
-          enabled: true,
-          url: `https://unifi-cameras.hacolby.app/proxy/hls/${cameraId}/master.m3u8`
-        }
-      ];
+      // Return empty array instead of test data when API fails
+      return [];
     }
   }
 
@@ -339,9 +292,31 @@ export class ProtectApiService {
    * Get camera snapshot image
    */
   async getCameraSnapshot(cameraId: string): Promise<ArrayBuffer> {
-    // For now, we'll need to implement a snapshot endpoint or use a placeholder
-    // The new API doesn't seem to have a direct snapshot endpoint
-    // We'll create a placeholder image for now
+    // Check if PROTECT_API is configured
+    if (!this.env.PROTECT_API) {
+      console.error('PROTECT_API environment variable is not set');
+      throw new Error('PROTECT_API environment variable is not configured');
+    }
+
+    // The API doesn't have a snapshot endpoint, so we'll create a placeholder
+    console.log(`Creating placeholder snapshot for camera: ${cameraId}`);
+    return this.createPlaceholderSnapshot(cameraId);
+  }
+
+  /**
+   * Create a placeholder snapshot when the real snapshot is unavailable
+   */
+  private createPlaceholderSnapshot(cameraId: string): ArrayBuffer {
+    // In Cloudflare Workers, we can't use OffscreenCanvas, so we'll create a simple placeholder
+    console.log(`Creating placeholder snapshot for camera: ${cameraId}`);
+    return this.createMinimalPlaceholder();
+  }
+
+  /**
+   * Create a minimal placeholder JPEG
+   */
+  private createMinimalPlaceholder(): ArrayBuffer {
+    // Minimal JPEG header for a 1x1 pixel image
     const placeholderImage = new Uint8Array([
       0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01, 0x01, 0x01, 0x00, 0x48,
       0x00, 0x48, 0x00, 0x00, 0xFF, 0xDB, 0x00, 0x43, 0x00, 0x08, 0x06, 0x06, 0x07, 0x06, 0x05, 0x08,
