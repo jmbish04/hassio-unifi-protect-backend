@@ -20,6 +20,9 @@ triggers = { crons = ["*/15 * * * *"] }
 directory = "./public"
 binding = "ASSETS"
 
+[observability]
+enabled=true
+
 
 # D1 database for events/labels
 [[d1_databases]]
