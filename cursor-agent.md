@@ -26,9 +26,10 @@ This is a Cloudflare Worker that provides a backend API for UniFi Protect integr
 ## 🔍 Debugging Checklist
 
 1. **Check API Spec**: Visit `https://unifi-cameras.hacolby.app/openapi.json`
-2. **Verify Environment**: Check `.dev.vars` file
-3. **Test Authentication**: Use curl with correct API keys
-4. **Check Logs**: Look for specific error messages in wrangler output
+2. **Get OpenAPI Schema**: Run `curl https://unifi-cameras.hacolby.app/openapi.json` for complete schema
+3. **Verify Environment**: Check `.dev.vars` file
+4. **Test Authentication**: Use curl with correct API keys
+5. **Check Logs**: Look for specific error messages in wrangler output
 
 ## 🛠️ Development Commands
 
@@ -68,6 +69,7 @@ curl http://localhost:8787/agent/security_sweep
 ## ⚠️ Important Reminders
 
 - **API Spec**: Always check `https://unifi-cameras.hacolby.app/openapi.json` for current endpoints
+- **OpenAPI Schema**: The complete API schema is available via `curl https://unifi-cameras.hacolby.app/openapi.json`
 - **Two API Keys**: Don't confuse `PROTECT_API_KEY` vs `WORKER_API_KEY`
 - **Header Format**: Use `x-api-key` not `Authorization: Bearer`
 - **Error Messages**: Provide specific, actionable error messages

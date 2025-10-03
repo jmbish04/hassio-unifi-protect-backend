@@ -116,6 +116,7 @@ pnpm test:watch       # Run tests in watch mode
 ## Important Notes
 
 - **API Specification**: Always check `https://unifi-cameras.hacolby.app/openapi.json` for current API endpoints
+- **OpenAPI Schema**: The complete API schema is available via `curl https://unifi-cameras.hacolby.app/openapi.json`
 - **Authentication**: Two separate API keys serve different purposes
 - **Error Handling**: All services include comprehensive error handling
 - **Type Safety**: Use `wrangler types` to generate current type definitions

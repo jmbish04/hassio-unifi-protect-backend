@@ -1,7 +1,8 @@
-import type { Env, WebhookEvent } from './types.js';
+import type { Env, WebhookEvent, LogEntryRequest } from './types.js';
 import { SecuritySweepService } from './services/security-sweep.js';
 import { ProtectApiService } from './services/protect-api.js';
 import { WebhookHandlerService } from './services/webhook-handler.js';
+import { LogService } from './services/log-service.js';
 import { json } from './utils/response.js';
 
 export default {
@@ -149,6 +150,77 @@ export default {
       }
     }
 
+    if (url.pathname.startsWith("/protect/cameras/") && url.pathname.endsWith("/feed") && req.method === "GET") {
+      // Camera feed endpoint - serves snapshots with auto-refresh capability
+      const apiKey = req.headers.get('x-api-key');
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({ error: 'API key required' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        const protectApi = new ProtectApiService(env);
+        if (!protectApi.validateApiKey(apiKey)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid API key' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const cameraId = url.pathname.split('/')[3];
+        const snapshot = await protectApi.getCameraSnapshot(cameraId);
+
+        // Check if client wants auto-refresh (for MJPEG stream simulation)
+        const refresh = url.searchParams.get('refresh');
+        if (refresh === 'true') {
+          // Return MJPEG stream
+          const boundary = '--frame';
+          const mjpegStream = new ReadableStream({
+            start(controller) {
+              const sendFrame = async () => {
+                try {
+                  const frameSnapshot = await protectApi.getCameraSnapshot(cameraId);
+                  const frame = `\r\n${boundary}\r\nContent-Type: image/jpeg\r\nContent-Length: ${frameSnapshot.byteLength}\r\n\r\n`;
+                  controller.enqueue(new TextEncoder().encode(frame));
+                  controller.enqueue(new Uint8Array(frameSnapshot));
+
+                  // Schedule next frame (roughly 1 FPS)
+                  setTimeout(sendFrame, 1000);
+                } catch (error) {
+                  console.error('Error in MJPEG stream:', error);
+                  controller.close();
+                }
+              };
+              sendFrame();
+            }
+          });
+
+          return new Response(mjpegStream, {
+            headers: {
+              'Content-Type': 'multipart/x-mixed-replace; boundary=frame',
+              'Cache-Control': 'no-cache',
+              'Connection': 'close'
+            }
+          });
+        } else {
+          // Return single snapshot
+          return new Response(snapshot, {
+            headers: {
+              'Content-Type': 'image/jpeg',
+              'Cache-Control': 'no-cache'
+            }
+          });
+        }
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to fetch camera feed' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     if (url.pathname.startsWith("/protect/cameras/") && !url.pathname.endsWith("/streams") && !url.pathname.endsWith("/snapshot") && req.method === "GET") {
       // Validate API key
       const apiKey = req.headers.get('x-api-key');
@@ -182,6 +254,253 @@ export default {
       } catch (error) {
         return new Response(
           JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to fetch camera' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Log endpoints for FastAPI integration
+    if (url.pathname === '/logs' && req.method === 'POST') {
+      const requestId = crypto.randomUUID();
+      const startTime = Date.now();
+
+      try {
+        console.log(`[${requestId}] Log entry POST received`, {
+          timestamp: new Date().toISOString(),
+          userAgent: req.headers.get('user-agent'),
+          contentType: req.headers.get('content-type'),
+          contentLength: req.headers.get('content-length'),
+          sourceIp: req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || 'unknown'
+        });
+
+        // No authentication required for writing logs - FastAPI can send logs freely
+
+        // Parse request body
+        const contentType = req.headers.get('content-type') || '';
+        let logRequest: LogEntryRequest | LogEntryRequest[];
+
+        if (contentType.includes('application/json')) {
+          const body = await req.json() as LogEntryRequest | LogEntryRequest[];
+          logRequest = body;
+        } else {
+          return new Response(
+            JSON.stringify({ error: 'Content-Type must be application/json' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const logService = new LogService(env);
+        const sourceIp = req.headers.get('cf-connecting-ip') || req.headers.get('x-forwarded-for') || undefined;
+        const userAgent = req.headers.get('user-agent') || undefined;
+
+        let result;
+        if (Array.isArray(logRequest)) {
+          // Batch log entries
+          result = await logService.storeLogEntries(logRequest, sourceIp, userAgent);
+        } else {
+          // Single log entry
+          result = await logService.storeLogEntry(logRequest, sourceIp, userAgent);
+        }
+
+        const responseTime = Date.now() - startTime;
+        console.log(`[${requestId}] Log entry processed`, {
+          success: result.success,
+          responseTimeMs: responseTime,
+          logId: result.logId,
+          count: result.count
+        });
+
+        return json(result, result.success ? 200 : 500);
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+        console.error(`[${requestId}] Log entry processing error`, {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          responseTimeMs: responseTime
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Failed to process log entry',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (url.pathname === '/logs' && req.method === 'GET') {
+      const requestId = crypto.randomUUID();
+      const startTime = Date.now();
+
+      try {
+        // Validate API key
+        const apiKey = req.headers.get('x-api-key');
+        if (!apiKey) {
+          return new Response(
+            JSON.stringify({ error: 'API key required' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const protectApi = new ProtectApiService(env);
+        if (!protectApi.validateApiKey(apiKey)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid API key' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const logService = new LogService(env);
+
+        // Parse query parameters
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        const offset = parseInt(url.searchParams.get('offset') || '0');
+        const level = url.searchParams.get('level') || undefined;
+        const loggerName = url.searchParams.get('logger_name') || undefined;
+        const startDate = url.searchParams.get('start_date') || undefined;
+        const endDate = url.searchParams.get('end_date') || undefined;
+        const requestId = url.searchParams.get('request_id') || undefined;
+        const correlationId = url.searchParams.get('correlation_id') || undefined;
+
+        const result = await logService.getLogEntries(
+          limit,
+          offset,
+          level,
+          loggerName,
+          startDate,
+          endDate,
+          requestId,
+          correlationId
+        );
+
+        const responseTime = Date.now() - startTime;
+        console.log(`[${requestId}] Log entries retrieved`, {
+          success: result.success,
+          responseTimeMs: responseTime,
+          count: result.count
+        });
+
+        return json(result);
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+        console.error(`[${requestId}] Log entries retrieval error`, {
+          error: error instanceof Error ? error.message : String(error),
+          responseTimeMs: responseTime
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Failed to retrieve log entries',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (url.pathname === '/logs/stats' && req.method === 'GET') {
+      const requestId = crypto.randomUUID();
+      const startTime = Date.now();
+
+      try {
+        // Validate API key
+        const apiKey = req.headers.get('x-api-key');
+        if (!apiKey) {
+          return new Response(
+            JSON.stringify({ error: 'API key required' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const protectApi = new ProtectApiService(env);
+        if (!protectApi.validateApiKey(apiKey)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid API key' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const logService = new LogService(env);
+        const stats = await logService.getLogStatistics();
+
+        const responseTime = Date.now() - startTime;
+        console.log(`[${requestId}] Log statistics retrieved`, {
+          responseTimeMs: responseTime,
+          totalEntries: stats.totalEntries
+        });
+
+        return json({
+          success: true,
+          message: 'Log statistics retrieved successfully',
+          statistics: stats
+        });
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+        console.error(`[${requestId}] Log statistics retrieval error`, {
+          error: error instanceof Error ? error.message : String(error),
+          responseTimeMs: responseTime
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Failed to retrieve log statistics',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (url.pathname === '/logs/cleanup' && req.method === 'POST') {
+      const requestId = crypto.randomUUID();
+      const startTime = Date.now();
+
+      try {
+        // Validate API key
+        const apiKey = req.headers.get('x-api-key');
+        if (!apiKey) {
+          return new Response(
+            JSON.stringify({ error: 'API key required' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const protectApi = new ProtectApiService(env);
+        if (!protectApi.validateApiKey(apiKey)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid API key' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const logService = new LogService(env);
+        const result = await logService.cleanupExpiredLogs();
+
+        const responseTime = Date.now() - startTime;
+        console.log(`[${requestId}] Log cleanup completed`, {
+          success: result.success,
+          responseTimeMs: responseTime,
+          deletedCount: result.count
+        });
+
+        return json(result);
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+        console.error(`[${requestId}] Log cleanup error`, {
+          error: error instanceof Error ? error.message : String(error),
+          responseTimeMs: responseTime
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Failed to cleanup expired logs',
+            error: error instanceof Error ? error.message : 'Unknown error'
+          }),
           { status: 500, headers: { 'Content-Type': 'application/json' } }
         );
       }
@@ -422,7 +741,17 @@ export default {
   // Cron trigger
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
     const securitySweep = new SecuritySweepService(env);
+    const logService = new LogService(env);
+
+    // Run security sweep
     ctx.waitUntil(securitySweep.runSecuritySweep({ trigger: "cron" }));
+
+    // Clean up expired log entries (runs daily)
+    ctx.waitUntil(logService.cleanupExpiredLogs().then(result => {
+      console.log('Scheduled log cleanup completed:', result);
+    }).catch(error => {
+      console.error('Scheduled log cleanup failed:', error);
+    }));
   },
 
   // Queue consumer

@@ -179,3 +179,44 @@ export interface ProtectCameraResponse extends ProtectCamera {}
 export interface ProtectStreamsResponse {
   streams: ProtectStream[];
 }
+
+// Log Entry Types
+export interface LogEntry {
+  logId: string;
+  timestamp: string;
+  level: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
+  loggerName?: string;
+  message: string;
+  module?: string;
+  functionName?: string;
+  lineNumber?: number;
+  threadId?: string;
+  processId?: number;
+  extraData?: Record<string, any>;
+  sourceIp?: string;
+  userAgent?: string;
+  requestId?: string;
+  correlationId?: string;
+}
+
+export interface LogEntryRequest {
+  level: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR' | 'CRITICAL';
+  loggerName?: string;
+  message: string;
+  module?: string;
+  functionName?: string;
+  lineNumber?: number;
+  threadId?: string;
+  processId?: number;
+  extraData?: Record<string, any>;
+  requestId?: string;
+  correlationId?: string;
+}
+
+export interface LogEntriesResponse {
+  success: boolean;
+  message: string;
+  logId?: string;
+  count?: number;
+  entries?: LogEntry[];
+}
