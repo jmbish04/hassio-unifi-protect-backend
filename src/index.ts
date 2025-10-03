@@ -203,9 +203,51 @@ export default {
         });
 
         const webhookHandler = new WebhookHandlerService(env);
-        const body = await req.json() as any;
+
+        // Handle both JSON and plain text content types
+        const contentType = req.headers.get('content-type') || '';
+        let body: any;
+        let originalJsonPayload: string | undefined;
+
+        if (contentType.includes('application/json')) {
+          const jsonText = await req.text();
+          originalJsonPayload = jsonText;
+          body = JSON.parse(jsonText);
+        } else {
+          // For plain text, try to parse as JSON first, fallback to text
+          const textBody = await req.text();
+          originalJsonPayload = textBody;
+
+          console.log(`[${requestId}] Raw webhook text body`, {
+            contentType,
+            bodyLength: textBody.length,
+            bodyPreview: textBody.substring(0, 200),
+            bodyFull: textBody
+          });
+
+          try {
+            body = JSON.parse(textBody);
+            console.log(`[${requestId}] Successfully parsed as JSON`, { body });
+          } catch (jsonError) {
+            console.log(`[${requestId}] JSON parse failed, treating as plain text`, {
+              jsonError: jsonError instanceof Error ? jsonError.message : String(jsonError),
+              textBody: textBody
+            });
+
+            // If not JSON, create a structured payload from plain text
+            body = {
+              eventId: crypto.randomUUID(),
+              cameraId: 'unknown',
+              eventType: 'motion',
+              timestamp: new Date().toISOString(),
+              rawPayload: { text: textBody },
+              type: 'plain_text'
+            };
+          }
+        }
 
         console.log(`[${requestId}] Webhook payload parsed`, {
+          contentType,
           eventId: body.eventId || 'generated',
           cameraId: body.cameraId || body.camera_id || 'unknown',
           eventType: body.eventType || body.event_type || 'motion',
@@ -235,7 +277,7 @@ export default {
         });
 
         // Process webhook asynchronously
-        ctx.waitUntil(webhookHandler.processWebhookEvent(webhookEvent).then(() => {
+        ctx.waitUntil(webhookHandler.processWebhookEvent(webhookEvent, originalJsonPayload, contentType).then(() => {
           const processingTime = Date.now() - startTime;
           console.log(`[${requestId}] Webhook processing completed successfully`, {
             processingTimeMs: processingTime,

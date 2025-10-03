@@ -31,7 +31,7 @@ export class WebhookHandlerService {
   /**
    * Process incoming webhook event
    */
-  async processWebhookEvent(event: WebhookEvent): Promise<void> {
+  async processWebhookEvent(event: WebhookEvent, originalJsonPayload?: string, contentType?: string): Promise<void> {
     const processingId = crypto.randomUUID();
     const startTime = Date.now();
 
@@ -56,7 +56,7 @@ export class WebhookHandlerService {
         eventType: event.eventType
       });
 
-      await this.saveWebhookEvent(event, cameraEnumId);
+      await this.saveWebhookEvent(event, cameraEnumId, originalJsonPayload, contentType);
 
       const dbSaveTime = Date.now() - startTime;
       console.log(`[${processingId}] Webhook event saved to D1 successfully`, {
@@ -170,7 +170,7 @@ export class WebhookHandlerService {
   /**
    * Save webhook event to D1
    */
-  private async saveWebhookEvent(event: WebhookEvent, cameraEnumId: string): Promise<void> {
+  private async saveWebhookEvent(event: WebhookEvent, cameraEnumId: string, originalJsonPayload?: string, contentType?: string): Promise<void> {
     const saveId = crypto.randomUUID();
     const startTime = Date.now();
 
@@ -191,8 +191,8 @@ export class WebhookHandlerService {
       });
 
       const stmt = this.env.DB.prepare(`
-        INSERT INTO webhook_events (event_id, camera_enum_id, event_type, timestamp, raw_payload, thumbnail_r2_key)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO webhook_events (event_id, camera_enum_id, event_type, timestamp, raw_payload, thumbnail_r2_key, original_json_payload, content_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const result = await stmt.bind(
@@ -201,7 +201,9 @@ export class WebhookHandlerService {
         eventType,
         timestamp,
         JSON.stringify(rawPayload),
-        null // Will be updated if thumbnail is saved
+        null, // Will be updated if thumbnail is saved
+        originalJsonPayload || null,
+        contentType || 'application/json'
       ).run();
 
       const saveTime = Date.now() - startTime;
