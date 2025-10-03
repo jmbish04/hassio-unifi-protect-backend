@@ -217,7 +217,7 @@ export default {
         // Parse webhook event
         const webhookEvent: WebhookEvent = {
           eventId: body.eventId || crypto.randomUUID(),
-          cameraId: body.cameraId || body.camera_id,
+          cameraId: body.cameraId || body.camera_id || 'unknown',
           eventType: body.eventType || body.event_type || 'motion',
           timestamp: body.timestamp || new Date().toISOString(),
           thumbnail: body.thumbnail,

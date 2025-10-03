@@ -175,12 +175,19 @@ export class WebhookHandlerService {
     const startTime = Date.now();
 
     try {
+      // Validate required fields
+      const eventId = event.eventId || crypto.randomUUID();
+      const cameraId = cameraEnumId || 'unknown';
+      const eventType = event.eventType || 'motion';
+      const timestamp = event.timestamp || new Date().toISOString();
+      const rawPayload = event.rawPayload || {};
+
       console.log(`[${saveId}] Preparing to save webhook event to D1`, {
-        eventId: event.eventId,
-        cameraEnumId,
-        eventType: event.eventType,
-        timestamp: event.timestamp,
-        rawPayloadSize: JSON.stringify(event.rawPayload).length
+        eventId,
+        cameraId,
+        eventType,
+        timestamp,
+        rawPayloadSize: JSON.stringify(rawPayload).length
       });
 
       const stmt = this.env.DB.prepare(`
@@ -189,19 +196,19 @@ export class WebhookHandlerService {
       `);
 
       const result = await stmt.bind(
-        event.eventId,
-        cameraEnumId,
-        event.eventType,
-        event.timestamp,
-        JSON.stringify(event.rawPayload),
+        eventId,
+        cameraId,
+        eventType,
+        timestamp,
+        JSON.stringify(rawPayload),
         null // Will be updated if thumbnail is saved
       ).run();
 
       const saveTime = Date.now() - startTime;
       console.log(`[${saveId}] Webhook event saved to D1 successfully`, {
-        eventId: event.eventId,
-        cameraEnumId,
-        eventType: event.eventType,
+        eventId,
+        cameraId,
+        eventType,
         dbResult: {
           meta: result.meta
         },
@@ -210,9 +217,9 @@ export class WebhookHandlerService {
     } catch (error) {
       const saveTime = Date.now() - startTime;
       console.error(`[${saveId}] Error saving webhook event to D1`, {
-        eventId: event.eventId,
-        cameraEnumId,
-        eventType: event.eventType,
+        eventId: event.eventId || 'unknown',
+        cameraEnumId: cameraEnumId || 'unknown',
+        eventType: event.eventType || 'unknown',
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         saveTimeMs: saveTime
