@@ -2,10 +2,16 @@
 	"name": "unifi-protect-api",
 	"version": "0.0.0",
 	"private": true,
+	"pnpm": {
+		"overrides": {
+			"workerd": "latest"
+		}
+	},
 	"scripts": {
 		"deploy": "npm run migrate:remote && npx wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
+		"build": "wrangler deploy --dry-run",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:watch": "vitest --watch",
