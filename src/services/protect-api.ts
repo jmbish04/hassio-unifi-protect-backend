@@ -175,7 +175,7 @@ export class ProtectApiService {
    */
   async getCameraStreams(cameraId: string): Promise<ProtectStream[]> {
     const streamsUrl = `${this.env.PROTECT_API}/protect/cameras/${cameraId}/streams`;
-    
+
     try {
       const response = await fetch(streamsUrl, {
         method: 'GET',
@@ -202,7 +202,7 @@ export class ProtectApiService {
    */
   async getCameraSnapshot(cameraId: string): Promise<ArrayBuffer> {
     const snapshotUrl = `${this.env.PROTECT_API}/protect/cameras/${cameraId}/snapshot`;
-    
+
     try {
       const response = await fetch(snapshotUrl, {
         method: 'GET',

@@ -3,13 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2025-10-01"
 workers_dev = true
 
-# Public entrypoints
-routes = [
-  # Webhook endpoint
-  { pattern = "protect.hacolby.app/webhook", zone_name = "hacolby.app" },
-  # Optional: signed image fetch proxy
-  { pattern = "protect.hacolby.app/fetch/*", zone_name = "hacolby.app" }
-]
+# Webhook endpoints will be handled via workers.dev subdomain
 
 # Cron (every 15 minutes) - check patrol configs and scheduled automations
 triggers = { crons = ["*/15 * * * *"] }

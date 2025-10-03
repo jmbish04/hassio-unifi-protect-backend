@@ -1,6 +1,7 @@
 import type { Env, WebhookEvent } from './types.js';
 import { SecuritySweepService } from './services/security-sweep.js';
 import { ProtectApiService } from './services/protect-api.js';
+import { WebhookHandlerService } from './services/webhook-handler.js';
 import { json } from './utils/response.js';
 
 export default {
@@ -39,7 +40,7 @@ export default {
       ctx.waitUntil(
         securitySweep.runSecuritySweep({
           trigger: `event:${event.type}`,
-          focusCamera: event.camera || null
+          focusCamera: event.cameraId || null
         })
       );
       return new Response("ok");
@@ -202,6 +203,61 @@ export default {
       }
     }
 
+    // Webhook endpoints
+    if (url.pathname === '/webhook' && req.method === 'POST') {
+      try {
+        const webhookHandler = new WebhookHandlerService(env);
+        const body = await req.json() as any;
+        
+        // Parse webhook event
+        const webhookEvent: WebhookEvent = {
+          eventId: body.eventId || crypto.randomUUID(),
+          cameraId: body.cameraId || body.camera_id,
+          eventType: body.eventType || body.event_type || 'motion',
+          timestamp: body.timestamp || new Date().toISOString(),
+          thumbnail: body.thumbnail,
+          rawPayload: body,
+          type: body.type || body.eventType || body.event_type || 'motion'
+        };
+
+        // Process webhook asynchronously
+        ctx.waitUntil(webhookHandler.processWebhookEvent(webhookEvent));
+
+        return json({ success: true, message: 'Webhook received and queued for processing' });
+      } catch (error) {
+        console.error('Webhook processing error:', error);
+        return new Response(
+          JSON.stringify({ error: 'Failed to process webhook' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (url.pathname.startsWith('/fetch/') && req.method === 'GET') {
+      try {
+        // Extract the R2 key from the path
+        const r2Key = url.pathname.replace('/fetch/', '');
+
+        // Get object from R2
+        const object = await env.BUCKET.get(r2Key);
+
+        if (!object) {
+          return new Response('Not found', { status: 404 });
+        }
+
+        // Return the object with appropriate headers
+        return new Response(object.body, {
+          headers: {
+            'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+            'Cache-Control': 'public, max-age=3600',
+          },
+        });
+      } catch (error) {
+        console.error('R2 fetch error:', error);
+        return new Response('Internal server error', { status: 500 });
+      }
+    }
+
     return new Response("not found", { status: 404 });
   },
 
@@ -218,7 +274,7 @@ export default {
     for (const message of batch.messages) {
       try {
         const event = message.body as WebhookEvent;
-        console.log(`Processing event: ${event.type} for camera: ${event.camera}`);
+        console.log(`Processing event: ${event.type} for camera: ${event.cameraId}`);
 
         // Process the event (you can add specific logic here)
         // For now, just log it

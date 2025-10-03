@@ -1,3 +1,13 @@
+export interface WebhookEvent {
+  eventId: string;
+  cameraId: string;
+  eventType: string;
+  timestamp: string;
+  thumbnail?: string; // base64 encoded
+  rawPayload: any;
+  type?: string; // Optional type field for compatibility
+}
+
 export interface Env {
   // Database
   DB: D1Database;
@@ -97,11 +107,6 @@ export interface ObservationRecord {
   r2_key: string;
 }
 
-export interface WebhookEvent {
-  type: string;
-  camera?: string;
-  [key: string]: any;
-}
 
 export interface MessageBatch<T = any> {
   messages: Array<{
