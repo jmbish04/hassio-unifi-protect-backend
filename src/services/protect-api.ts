@@ -175,7 +175,7 @@ export class ProtectApiService {
    */
   async getCameraStreams(cameraId: string): Promise<ProtectStream[]> {
     const streamsUrl = `${this.env.PROTECT_API}/protect/cameras/${cameraId}/streams`;
-
+    
     try {
       const response = await fetch(streamsUrl, {
         method: 'GET',
@@ -194,6 +194,32 @@ export class ProtectApiService {
     } catch (error) {
       console.error('Camera streams fetch error:', error);
       throw new Error(`Failed to fetch camera streams: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Get camera snapshot image
+   */
+  async getCameraSnapshot(cameraId: string): Promise<ArrayBuffer> {
+    const snapshotUrl = `${this.env.PROTECT_API}/protect/cameras/${cameraId}/snapshot`;
+    
+    try {
+      const response = await fetch(snapshotUrl, {
+        method: 'GET',
+        headers: {
+          'x-api-key': this.env.PROTECT_API_KEY,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch camera snapshot: ${response.status} ${errorText}`);
+      }
+
+      return await response.arrayBuffer();
+    } catch (error) {
+      console.error('Camera snapshot fetch error:', error);
+      throw new Error(`Failed to fetch camera snapshot: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

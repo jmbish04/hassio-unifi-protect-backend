@@ -129,7 +129,42 @@ export default {
       }
     }
 
-    if (url.pathname.startsWith("/protect/cameras/") && !url.pathname.endsWith("/streams") && req.method === "GET") {
+    if (url.pathname.startsWith("/protect/cameras/") && url.pathname.endsWith("/snapshot") && req.method === "GET") {
+      // Validate API key
+      const apiKey = req.headers.get('x-api-key');
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({ error: 'API key required' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      try {
+        const protectApi = new ProtectApiService(env);
+        if (!protectApi.validateApiKey(apiKey)) {
+          return new Response(
+            JSON.stringify({ error: 'Invalid API key' }),
+            { status: 401, headers: { 'Content-Type': 'application/json' } }
+          );
+        }
+
+        const cameraId = url.pathname.split('/')[3];
+        const snapshot = await protectApi.getCameraSnapshot(cameraId);
+        return new Response(snapshot, {
+          headers: {
+            'Content-Type': 'image/jpeg',
+            'Cache-Control': 'no-cache'
+          }
+        });
+      } catch (error) {
+        return new Response(
+          JSON.stringify({ error: error instanceof Error ? error.message : 'Failed to fetch camera snapshot' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (url.pathname.startsWith("/protect/cameras/") && !url.pathname.endsWith("/streams") && !url.pathname.endsWith("/snapshot") && req.method === "GET") {
       // Validate API key
       const apiKey = req.headers.get('x-api-key');
       if (!apiKey) {
