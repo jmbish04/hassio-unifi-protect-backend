@@ -8,7 +8,7 @@
 		}
 	},
 	"scripts": {
-		"deploy": "npm run migrate:remote && npx wrangler deploy",
+		"deploy": "npm run migrate:remote && wrangler deploy",
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"build": "wrangler deploy --dry-run",
@@ -30,5 +30,24 @@
 		"vitest": "~3.2.0",
 		"wrangler": "^4.41.0"
 	},
-	"packageManager": "pnpm@10.18.0"
+	"packageManager": "pnpm@10.18.0",
+	"cloudflare": {
+		"bindings": {
+			"DB": {
+				"description": "D1 Database for storing patrol runs and observations"
+			},
+			"BUCKET": {
+				"description": "R2 Bucket for storing camera snapshots and media"
+			},
+			"EVENTS_Q": {
+				"description": "Queue for processing async events"
+			},
+			"AI": {
+				"description": "Workers AI binding for vision analysis"
+			},
+			"ASSETS": {
+				"description": "Static assets binding for serving the web dashboard"
+			}
+		}
+	}
 }
