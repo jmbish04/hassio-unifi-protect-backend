@@ -208,7 +208,7 @@ export default {
       try {
         const webhookHandler = new WebhookHandlerService(env);
         const body = await req.json() as any;
-        
+
         // Parse webhook event
         const webhookEvent: WebhookEvent = {
           eventId: body.eventId || crypto.randomUUID(),
