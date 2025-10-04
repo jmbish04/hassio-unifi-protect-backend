@@ -603,14 +603,34 @@
                 updateStatus('api', false, 'Offline');
             }
 
-            // Check UniFi Protect login
+            // Check UniFi Protect status and camera availability
             try {
-                const response = await fetch('/protect/login', { method: 'POST' });
-                const data = await response.json();
-                if (response.ok) {
-                    updateStatus('protect', true, 'Connected');
+                // First check if we can login
+                const loginResponse = await fetch('/protect/login', { method: 'POST' });
+                if (!loginResponse.ok) {
+                    updateStatus('protect', false, 'Login Failed');
+                    return;
+                }
+
+                // Then check if cameras are available
+                const camerasResponse = await fetch('/protect/cameras', {
+                    headers: {
+                        'x-api-key': apiKey
+                    }
+                });
+
+                if (camerasResponse.ok) {
+                    const camerasData = await camerasResponse.json();
+                    const cameras = camerasData.cameras || [];
+
+                    if (cameras.length > 0) {
+                        const onlineCameras = cameras.filter(cam => cam.state === 'CONNECTED').length;
+                        updateStatus('protect', true, `Connected (${onlineCameras}/${cameras.length} cameras online)`);
+                    } else {
+                        updateStatus('protect', false, 'Connected but no cameras found');
+                    }
                 } else {
-                    updateStatus('protect', false, data.error || 'Failed');
+                    updateStatus('protect', false, 'Camera API Error');
                 }
             } catch (error) {
                 updateStatus('protect', false, 'Offline');
@@ -671,15 +691,20 @@
                 document.getElementById('cameraSection').innerHTML = `
                     <div class="error">
                         <h3>No Cameras Found</h3>
-                        <p>This could be due to:</p>
+                        <p><strong>Current Status:</strong> The UniFi Protect API is responding correctly, but no cameras are configured in the system.</p>
+                        <p>This means:</p>
                         <ul style="text-align: left; margin: 1rem 0;">
-                            <li>No cameras are configured in UniFi Protect</li>
-                            <li>API authentication is failing</li>
-                            <li>API endpoint is incorrect</li>
-                            <li>Cameras are not online</li>
-                            <li>PROTECT_API environment variable is not set</li>
+                            <li>✅ API connection is working</li>
+                            <li>✅ Authentication is successful</li>
+                            <li>❌ No cameras are configured in the UniFi Protect system</li>
                         </ul>
-                        <p><strong>Check the console logs for more details.</strong></p>
+                        <p><strong>To fix this:</strong> The external API at <code>https://unifi-cameras.hacolby.app</code> needs to have cameras added to its configuration.</p>
+                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 1rem 0; font-family: monospace; font-size: 0.9rem;">
+                            <strong>API Response:</strong> <code>{"items": []}</code><br>
+                            <strong>Status:</strong> 200 OK<br>
+                            <strong>Issue:</strong> Empty camera list from external API
+                        </div>
+                        <p><em>Check the console logs for detailed API response information.</em></p>
                     </div>
                 `;
                 return;

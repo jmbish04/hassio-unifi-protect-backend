@@ -41,9 +41,10 @@ describe('ProtectApiService', () => {
         'https://test-protect.example.com/protect/login',
         expect.objectContaining({
           method: 'POST',
-          headers: {
+          headers: expect.objectContaining({
             'Content-Type': 'application/json',
-          },
+            'Authorization': 'Bearer test-api-key'
+          }),
           body: JSON.stringify({
             username: 'test-user',
             password: 'test-password'
