@@ -12,6 +12,39 @@ export default {
 	async fetch(req: Request, env: Env, ctx: ExecutionContext) {
 		const url = new URL(req.url);
 
+		// UI Worker Agent Prompt endpoint (must be before static assets handler)
+		if (url.pathname === '/ui/worker-agent-prompt' && req.method === 'GET') {
+			try {
+				const promptFile = await env.ASSETS.fetch(new Request(new URL('/UNIT_TEST_AGENT_PROMPT.md', req.url)));
+
+				if (!promptFile.ok) {
+					return new Response(JSON.stringify({ error: 'Worker agent prompt file not found' }), {
+						status: 404,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
+				const content = await promptFile.text();
+
+				return new Response(content, {
+					headers: {
+						'Content-Type': 'text/plain; charset=utf-8',
+						'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+						'Access-Control-Allow-Origin': '*',
+					},
+				});
+			} catch (error) {
+				console.error('Error serving worker agent prompt:', error);
+				return new Response(
+					JSON.stringify({
+						error: 'Failed to serve worker agent prompt',
+						details: error instanceof Error ? error.message : String(error),
+					}),
+					{ status: 500, headers: { 'Content-Type': 'application/json' } },
+				);
+			}
+		}
+
 		// Handle static assets first
 		if (
 			url.pathname.startsWith('/public/') ||
