@@ -267,6 +267,89 @@ describe('Hello World worker', () => {
 			            color: #666;
 			        }
 
+			        .webhook-events {
+			            max-height: 600px;
+			            overflow-y: auto;
+			            border: 1px solid #e9ecef;
+			            border-radius: 8px;
+			            background: #f8f9fa;
+			        }
+
+			        .webhook-event {
+			            background: white;
+			            border-bottom: 1px solid #e9ecef;
+			            padding: 1rem;
+			            transition: background-color 0.2s ease;
+			        }
+
+			        .webhook-event:hover {
+			            background: #f8f9fa;
+			        }
+
+			        .webhook-event:last-child {
+			            border-bottom: none;
+			        }
+
+			        .webhook-header {
+			            display: flex;
+			            justify-content: space-between;
+			            align-items: center;
+			            margin-bottom: 0.5rem;
+			        }
+
+			        .webhook-event-type {
+			            background: #667eea;
+			            color: white;
+			            padding: 0.25rem 0.5rem;
+			            border-radius: 4px;
+			            font-size: 0.8rem;
+			            font-weight: bold;
+			        }
+
+			        .webhook-timestamp {
+			            color: #666;
+			            font-size: 0.9rem;
+			        }
+
+			        .webhook-details {
+			            display: grid;
+			            grid-template-columns: 1fr 1fr;
+			            gap: 1rem;
+			            margin-top: 0.5rem;
+			        }
+
+			        .webhook-detail {
+			            font-size: 0.9rem;
+			        }
+
+			        .webhook-detail strong {
+			            color: #333;
+			        }
+
+			        .webhook-thumbnail {
+			            width: 100%;
+			            max-width: 200px;
+			            height: auto;
+			            border-radius: 4px;
+			            margin-top: 0.5rem;
+			        }
+
+			        .webhook-raw {
+			            background: #f1f3f4;
+			            border: 1px solid #e0e0e0;
+			            border-radius: 4px;
+			            padding: 0.5rem;
+			            font-family: 'Courier New', monospace;
+			            font-size: 0.8rem;
+			            max-height: 100px;
+			            overflow-y: auto;
+			            margin-top: 0.5rem;
+			        }
+
+			        .webhook-refresh {
+			            margin-bottom: 1rem;
+			        }
+
 			        .endpoint-list {
 			            list-style: none;
 			        }
@@ -361,6 +444,7 @@ describe('Hello World worker', () => {
 			                <li><a href="#home">Home</a></li>
 			                <li><a href="#health">Health Check</a></li>
 			                <li><a href="#cameras">Cameras</a></li>
+			                <li><a href="#webhooks">Webhooks</a></li>
 			                <li><a href="#api">API</a></li>
 			                <li><a href="/openapi.json" target="_blank">OpenAPI Schema</a></li>
 			            </ul>
@@ -381,9 +465,12 @@ describe('Hello World worker', () => {
 			            <section id="api-key" class="section">
 			                <h2>API Authentication</h2>
 			                <div class="api-key-section">
-			                    <label for="apiKey">Enter your API key to access protected endpoints:</label>
-			                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your API key...">
+			                    <label for="apiKey">Enter your Worker API key to access protected endpoints:</label>
+			                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your Worker API key...">
 			                    <button onclick="setApiKey()" class="btn">Set API Key</button>
+			                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+			                        <strong>Note:</strong> This is the WORKER_API_KEY for authenticating with this worker, not the UniFi Protect API key.
+			                    </p>
 			                </div>
 			            </section>
 
@@ -418,6 +505,13 @@ describe('Hello World worker', () => {
 			                <h2>Camera Feeds</h2>
 			                <div id="cameraSection">
 			                    <div class="loading">Enter API key above to view camera feeds</div>
+			                </div>
+			            </section>
+
+			            <section id="webhooks" class="section">
+			                <h2>Webhook Events</h2>
+			                <div id="webhookSection">
+			                    <div class="loading">Enter API key above to view webhook events</div>
 			                </div>
 			            </section>
 
@@ -487,6 +581,7 @@ describe('Hello World worker', () => {
 			                input.value = '';
 			                runHealthCheck();
 			                loadCameras();
+			                loadWebhookEvents();
 			            } else {
 			                alert('Please enter a valid API key');
 			            }
@@ -498,18 +593,25 @@ describe('Hello World worker', () => {
 			                document.getElementById('apiKey').value = apiKey;
 			                runHealthCheck();
 			                loadCameras();
+			                loadWebhookEvents();
 			            }
 			        });
 
+			        // Clean up when page is unloaded
+			        window.addEventListener('beforeunload', function() {
+			            stopCameraRefresh();
+			        });
+
+			        // Status configuration
+			        const statuses = {
+			            api: { element: 'apiStatus', text: 'apiStatusText' },
+			            protect: { element: 'protectStatus', text: 'protectStatusText' },
+			            db: { element: 'dbStatus', text: 'dbStatusText' },
+			            storage: { element: 'storageStatus', text: 'storageStatusText' }
+			        };
+
 			        // Health check function
 			        async function runHealthCheck() {
-			            const statuses = {
-			                api: { element: 'apiStatus', text: 'apiStatusText' },
-			                protect: { element: 'protectStatus', text: 'protectStatusText' },
-			                db: { element: 'dbStatus', text: 'dbStatusText' },
-			                storage: { element: 'storageStatus', text: 'storageStatusText' }
-			            };
-
 			            // Check API status
 			            try {
 			                const response = await fetch('/agent/security_sweep');
@@ -522,7 +624,11 @@ describe('Hello World worker', () => {
 			            try {
 			                const response = await fetch('/protect/login', { method: 'POST' });
 			                const data = await response.json();
-			                updateStatus('protect', response.ok, response.ok ? 'Connected' : 'Failed');
+			                if (response.ok) {
+			                    updateStatus('protect', true, 'Connected');
+			                } else {
+			                    updateStatus('protect', false, data.error || 'Failed');
+			                }
 			            } catch (error) {
 			                updateStatus('protect', false, 'Offline');
 			            }
@@ -570,33 +676,138 @@ describe('Hello World worker', () => {
 			                }
 
 			                const data = await response.json();
-			                displayCameras(data.cameras || []);
+			                await displayCameras(data.cameras || []);
 			            } catch (error) {
 			                document.getElementById('cameraSection').innerHTML =
 			                    \`<div class="error">Error loading cameras: \${error.message}</div>\`;
 			            }
 			        }
 
-			        function displayCameras(cameras) {
+			        async function displayCameras(cameras) {
 			            if (cameras.length === 0) {
-			                document.getElementById('cameraSection').innerHTML =
-			                    '<div class="loading">No cameras found</div>';
+			                document.getElementById('cameraSection').innerHTML = \`
+			                    <div class="error">
+			                        <h3>No Cameras Found</h3>
+			                        <p>This could be due to:</p>
+			                        <ul style="text-align: left; margin: 1rem 0;">
+			                            <li>No cameras are configured in UniFi Protect</li>
+			                            <li>API authentication is failing</li>
+			                            <li>API endpoint is incorrect</li>
+			                            <li>Cameras are not online</li>
+			                            <li>PROTECT_API environment variable is not set</li>
+			                        </ul>
+			                        <p><strong>Check the console logs for more details.</strong></p>
+			                    </div>
+			                \`;
 			                return;
 			            }
 
 			            const cameraGrid = document.createElement('div');
 			            cameraGrid.className = 'camera-grid';
 
-			            cameras.forEach(camera => {
+			            // Process each camera and fetch its streams
+			            for (const camera of cameras) {
 			                const cameraCard = document.createElement('div');
 			                cameraCard.className = 'camera-card';
 
 			                const statusClass = camera.state === 'CONNECTED' ? 'status-success' : 'status-error';
 			                const statusText = camera.state === 'CONNECTED' ? 'Online' : 'Offline';
 
+			                // Fetch streams for this camera
+			                let streamsInfo = 'Loading streams...';
+			                let streams = [];
+			                try {
+			                    const streamsResponse = await fetch(\`/protect/cameras/\${camera.id}/streams\`, {
+			                        headers: {
+			                            'x-api-key': apiKey
+			                        }
+			                    });
+
+			                    if (streamsResponse.ok) {
+			                        const streamsData = await streamsResponse.json();
+			                        streams = streamsData.streams || [];
+			                        if (streams.length > 0) {
+			                            const enabledStreams = streams.filter(s => s.enabled);
+			                            streamsInfo = \`Streams: \${enabledStreams.length}/\${streams.length} enabled\`;
+			                        } else {
+			                            streamsInfo = 'No streams available';
+			                        }
+			                    } else {
+			                        streamsInfo = 'Streams: Error loading';
+			                    }
+			                } catch (error) {
+			                    streamsInfo = 'Streams: Error loading';
+			                }
+
+			                // Create camera feed display
+			                let videoElement = '';
+			                if (streams && streams.length > 0) {
+			                    const enabledStreams = streams.filter(s => s.enabled);
+			                    if (enabledStreams.length > 0) {
+			                        // Show live camera feed using snapshots
+			                        videoElement = \`
+			                            <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: #000;">
+			                                <img id="camera-feed-\${camera.id}"
+			                                     src="/protect/cameras/\${camera.id}/feed?refresh=true"
+			                                     style="width: 100%; height: 100%; object-fit: cover;"
+			                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+			                                     alt="Camera Feed">
+			                                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+			                                    <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+			                                    <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">\${camera.name || 'Camera'}</div>
+			                                    <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
+			                                        Live feed unavailable<br>
+			                                        <small>Showing static snapshot</small>
+			                                    </div>
+			                                </div>
+			                                <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    \${enabledStreams.length} Stream\${enabledStreams.length > 1 ? 's' : ''}
+			                                </div>
+			                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    \${statusText}
+			                                </div>
+			                                <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    Live Feed
+			                                </div>
+			                            </div>
+			                        \`;
+			                    } else {
+			                        // No enabled streams
+			                        videoElement = \`
+			                            <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+			                                <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+			                                <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">\${camera.name || 'Camera'}</div>
+			                                <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
+			                                    No streams available<br>
+			                                    <small>Check camera configuration</small>
+			                                </div>
+			                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    \${statusText}
+			                                </div>
+			                            </div>
+			                        \`;
+			                    }
+			                } else {
+			                    // No streams at all
+			                    videoElement = \`
+			                        <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+			                            <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+			                            <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">\${camera.name || 'Camera'}</div>
+			                            <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
+			                                No streams configured<br>
+			                                <small>Check API connection</small>
+			                            </div>
+			                            <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                \${statusText}
+			                            </div>
+			                        </div>
+			                    \`;
+			                }
+
 			                cameraCard.innerHTML = \`
 			                    <div class="camera-feed">
-			                        <div>Camera Feed<br><small>RTSP: \${camera.channels?.[0]?.isRtspEnabled ? 'Available' : 'Not Available'}</small></div>
+			                        \${videoElement || \`<div style="padding: 50px; text-align: center; background: #f0f0f0; color: #666;">No video stream available</div>\`}
+			                        <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">\${streamsInfo}</div>
 			                    </div>
 			                    <div class="camera-info">
 			                        <div class="camera-name">\${camera.name || 'Unknown Camera'}</div>
@@ -611,10 +822,141 @@ describe('Hello World worker', () => {
 			                \`;
 
 			                cameraGrid.appendChild(cameraCard);
-			            });
+			            }
 
 			            document.getElementById('cameraSection').innerHTML = '';
 			            document.getElementById('cameraSection').appendChild(cameraGrid);
+
+			            // Start camera refresh after a short delay to let images load
+			            setTimeout(() => {
+			                startCameraRefresh();
+			            }, 1000);
+			        }
+
+			        // Refresh camera feeds periodically
+			        function refreshCameraFeeds() {
+			            const cameraFeeds = document.querySelectorAll('img[id^="camera-feed-"]');
+			            cameraFeeds.forEach(img => {
+			                const currentSrc = img.src;
+			                // Add timestamp to force refresh
+			                const separator = currentSrc.includes('?') ? '&' : '?';
+			                img.src = currentSrc + separator + 't=' + Date.now();
+			            });
+			        }
+
+			        // Set up periodic refresh for camera feeds (every 5 seconds)
+			        let cameraRefreshInterval;
+			        function startCameraRefresh() {
+			            if (cameraRefreshInterval) {
+			                clearInterval(cameraRefreshInterval);
+			            }
+			            cameraRefreshInterval = setInterval(refreshCameraFeeds, 5000);
+			        }
+
+			        function stopCameraRefresh() {
+			            if (cameraRefreshInterval) {
+			                clearInterval(cameraRefreshInterval);
+			                cameraRefreshInterval = null;
+			            }
+			        }
+
+			        // Load webhook events
+			        async function loadWebhookEvents() {
+			            if (!apiKey) {
+			                document.getElementById('webhookSection').innerHTML =
+			                    '<div class="loading">Enter API key above to view webhook events</div>';
+			                return;
+			            }
+
+			            document.getElementById('webhookSection').innerHTML =
+			                '<div class="loading">Loading webhook events...</div>';
+
+			            try {
+			                const response = await fetch('/webhook/events', {
+			                    headers: {
+			                        'x-api-key': apiKey
+			                    }
+			                });
+
+			                if (!response.ok) {
+			                    throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+			                }
+
+			                const data = await response.json();
+			                await displayWebhookEvents(data.events || []);
+			            } catch (error) {
+			                document.getElementById('webhookSection').innerHTML =
+			                    \`<div class="error">Error loading webhook events: \${error.message}</div>\`;
+			            }
+			        }
+
+			        async function displayWebhookEvents(events) {
+			            if (events.length === 0) {
+			                document.getElementById('webhookSection').innerHTML =
+			                    '<div class="loading">No webhook events found</div>';
+			                return;
+			            }
+
+			            const webhookContainer = document.createElement('div');
+			            webhookContainer.innerHTML = \`
+			                <div class="webhook-refresh">
+			                    <button onclick="loadWebhookEvents()" class="btn">Refresh Events</button>
+			                </div>
+			            \`;
+
+			            const webhookEvents = document.createElement('div');
+			            webhookEvents.className = 'webhook-events';
+
+			            events.forEach(event => {
+			                const eventElement = document.createElement('div');
+			                eventElement.className = 'webhook-event';
+
+			                const timestamp = new Date(event.timestamp).toLocaleString();
+			                const eventType = event.eventType || event.type || 'unknown';
+			                const cameraId = event.cameraId || event.camera || 'unknown';
+
+			                let thumbnailHtml = '';
+			                if (event.thumbnail_r2_key) {
+			                    thumbnailHtml = \`
+			                        <img src="/fetch/\${event.thumbnail_r2_key}"
+			                             alt="Event thumbnail"
+			                             class="webhook-thumbnail"
+			                             onerror="this.style.display='none'">
+			                    \`;
+			                }
+
+			                eventElement.innerHTML = \`
+			                    <div class="webhook-header">
+			                        <span class="webhook-event-type">\${eventType.toUpperCase()}</span>
+			                        <span class="webhook-timestamp">\${timestamp}</span>
+			                    </div>
+			                    <div class="webhook-details">
+			                        <div class="webhook-detail">
+			                            <strong>Event ID:</strong> \${event.eventId || event.id || 'N/A'}
+			                        </div>
+			                        <div class="webhook-detail">
+			                            <strong>Camera ID:</strong> \${cameraId}
+			                        </div>
+			                        <div class="webhook-detail">
+			                            <strong>Processed:</strong> \${event.processed ? 'Yes' : 'No'}
+			                        </div>
+			                        <div class="webhook-detail">
+			                            <strong>Patrol Run:</strong> \${event.patrol_run_id || 'N/A'}
+			                        </div>
+			                    </div>
+			                    \${thumbnailHtml}
+			                    <div class="webhook-raw">
+			                        <strong>Raw Payload:</strong><br>
+			                        <pre>\${JSON.stringify(event.rawPayload || event, null, 2)}</pre>
+			                    </div>
+			                \`;
+
+			                webhookEvents.appendChild(eventElement);
+			            });
+
+			            webhookContainer.appendChild(webhookEvents);
+			            document.getElementById('webhookSection').innerHTML = '';
+			            document.getElementById('webhookSection').appendChild(webhookContainer);
 			        }
 
 			        // Smooth scrolling for navigation links
@@ -892,6 +1234,89 @@ describe('Hello World worker', () => {
 			            color: #666;
 			        }
 
+			        .webhook-events {
+			            max-height: 600px;
+			            overflow-y: auto;
+			            border: 1px solid #e9ecef;
+			            border-radius: 8px;
+			            background: #f8f9fa;
+			        }
+
+			        .webhook-event {
+			            background: white;
+			            border-bottom: 1px solid #e9ecef;
+			            padding: 1rem;
+			            transition: background-color 0.2s ease;
+			        }
+
+			        .webhook-event:hover {
+			            background: #f8f9fa;
+			        }
+
+			        .webhook-event:last-child {
+			            border-bottom: none;
+			        }
+
+			        .webhook-header {
+			            display: flex;
+			            justify-content: space-between;
+			            align-items: center;
+			            margin-bottom: 0.5rem;
+			        }
+
+			        .webhook-event-type {
+			            background: #667eea;
+			            color: white;
+			            padding: 0.25rem 0.5rem;
+			            border-radius: 4px;
+			            font-size: 0.8rem;
+			            font-weight: bold;
+			        }
+
+			        .webhook-timestamp {
+			            color: #666;
+			            font-size: 0.9rem;
+			        }
+
+			        .webhook-details {
+			            display: grid;
+			            grid-template-columns: 1fr 1fr;
+			            gap: 1rem;
+			            margin-top: 0.5rem;
+			        }
+
+			        .webhook-detail {
+			            font-size: 0.9rem;
+			        }
+
+			        .webhook-detail strong {
+			            color: #333;
+			        }
+
+			        .webhook-thumbnail {
+			            width: 100%;
+			            max-width: 200px;
+			            height: auto;
+			            border-radius: 4px;
+			            margin-top: 0.5rem;
+			        }
+
+			        .webhook-raw {
+			            background: #f1f3f4;
+			            border: 1px solid #e0e0e0;
+			            border-radius: 4px;
+			            padding: 0.5rem;
+			            font-family: 'Courier New', monospace;
+			            font-size: 0.8rem;
+			            max-height: 100px;
+			            overflow-y: auto;
+			            margin-top: 0.5rem;
+			        }
+
+			        .webhook-refresh {
+			            margin-bottom: 1rem;
+			        }
+
 			        .endpoint-list {
 			            list-style: none;
 			        }
@@ -986,6 +1411,7 @@ describe('Hello World worker', () => {
 			                <li><a href="#home">Home</a></li>
 			                <li><a href="#health">Health Check</a></li>
 			                <li><a href="#cameras">Cameras</a></li>
+			                <li><a href="#webhooks">Webhooks</a></li>
 			                <li><a href="#api">API</a></li>
 			                <li><a href="/openapi.json" target="_blank">OpenAPI Schema</a></li>
 			            </ul>
@@ -1006,9 +1432,12 @@ describe('Hello World worker', () => {
 			            <section id="api-key" class="section">
 			                <h2>API Authentication</h2>
 			                <div class="api-key-section">
-			                    <label for="apiKey">Enter your API key to access protected endpoints:</label>
-			                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your API key...">
+			                    <label for="apiKey">Enter your Worker API key to access protected endpoints:</label>
+			                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your Worker API key...">
 			                    <button onclick="setApiKey()" class="btn">Set API Key</button>
+			                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+			                        <strong>Note:</strong> This is the WORKER_API_KEY for authenticating with this worker, not the UniFi Protect API key.
+			                    </p>
 			                </div>
 			            </section>
 
@@ -1043,6 +1472,13 @@ describe('Hello World worker', () => {
 			                <h2>Camera Feeds</h2>
 			                <div id="cameraSection">
 			                    <div class="loading">Enter API key above to view camera feeds</div>
+			                </div>
+			            </section>
+
+			            <section id="webhooks" class="section">
+			                <h2>Webhook Events</h2>
+			                <div id="webhookSection">
+			                    <div class="loading">Enter API key above to view webhook events</div>
 			                </div>
 			            </section>
 
@@ -1112,6 +1548,7 @@ describe('Hello World worker', () => {
 			                input.value = '';
 			                runHealthCheck();
 			                loadCameras();
+			                loadWebhookEvents();
 			            } else {
 			                alert('Please enter a valid API key');
 			            }
@@ -1123,18 +1560,25 @@ describe('Hello World worker', () => {
 			                document.getElementById('apiKey').value = apiKey;
 			                runHealthCheck();
 			                loadCameras();
+			                loadWebhookEvents();
 			            }
 			        });
 
+			        // Clean up when page is unloaded
+			        window.addEventListener('beforeunload', function() {
+			            stopCameraRefresh();
+			        });
+
+			        // Status configuration
+			        const statuses = {
+			            api: { element: 'apiStatus', text: 'apiStatusText' },
+			            protect: { element: 'protectStatus', text: 'protectStatusText' },
+			            db: { element: 'dbStatus', text: 'dbStatusText' },
+			            storage: { element: 'storageStatus', text: 'storageStatusText' }
+			        };
+
 			        // Health check function
 			        async function runHealthCheck() {
-			            const statuses = {
-			                api: { element: 'apiStatus', text: 'apiStatusText' },
-			                protect: { element: 'protectStatus', text: 'protectStatusText' },
-			                db: { element: 'dbStatus', text: 'dbStatusText' },
-			                storage: { element: 'storageStatus', text: 'storageStatusText' }
-			            };
-
 			            // Check API status
 			            try {
 			                const response = await fetch('/agent/security_sweep');
@@ -1147,7 +1591,11 @@ describe('Hello World worker', () => {
 			            try {
 			                const response = await fetch('/protect/login', { method: 'POST' });
 			                const data = await response.json();
-			                updateStatus('protect', response.ok, response.ok ? 'Connected' : 'Failed');
+			                if (response.ok) {
+			                    updateStatus('protect', true, 'Connected');
+			                } else {
+			                    updateStatus('protect', false, data.error || 'Failed');
+			                }
 			            } catch (error) {
 			                updateStatus('protect', false, 'Offline');
 			            }
@@ -1195,33 +1643,138 @@ describe('Hello World worker', () => {
 			                }
 
 			                const data = await response.json();
-			                displayCameras(data.cameras || []);
+			                await displayCameras(data.cameras || []);
 			            } catch (error) {
 			                document.getElementById('cameraSection').innerHTML =
 			                    \`<div class="error">Error loading cameras: \${error.message}</div>\`;
 			            }
 			        }
 
-			        function displayCameras(cameras) {
+			        async function displayCameras(cameras) {
 			            if (cameras.length === 0) {
-			                document.getElementById('cameraSection').innerHTML =
-			                    '<div class="loading">No cameras found</div>';
+			                document.getElementById('cameraSection').innerHTML = \`
+			                    <div class="error">
+			                        <h3>No Cameras Found</h3>
+			                        <p>This could be due to:</p>
+			                        <ul style="text-align: left; margin: 1rem 0;">
+			                            <li>No cameras are configured in UniFi Protect</li>
+			                            <li>API authentication is failing</li>
+			                            <li>API endpoint is incorrect</li>
+			                            <li>Cameras are not online</li>
+			                            <li>PROTECT_API environment variable is not set</li>
+			                        </ul>
+			                        <p><strong>Check the console logs for more details.</strong></p>
+			                    </div>
+			                \`;
 			                return;
 			            }
 
 			            const cameraGrid = document.createElement('div');
 			            cameraGrid.className = 'camera-grid';
 
-			            cameras.forEach(camera => {
+			            // Process each camera and fetch its streams
+			            for (const camera of cameras) {
 			                const cameraCard = document.createElement('div');
 			                cameraCard.className = 'camera-card';
 
 			                const statusClass = camera.state === 'CONNECTED' ? 'status-success' : 'status-error';
 			                const statusText = camera.state === 'CONNECTED' ? 'Online' : 'Offline';
 
+			                // Fetch streams for this camera
+			                let streamsInfo = 'Loading streams...';
+			                let streams = [];
+			                try {
+			                    const streamsResponse = await fetch(\`/protect/cameras/\${camera.id}/streams\`, {
+			                        headers: {
+			                            'x-api-key': apiKey
+			                        }
+			                    });
+
+			                    if (streamsResponse.ok) {
+			                        const streamsData = await streamsResponse.json();
+			                        streams = streamsData.streams || [];
+			                        if (streams.length > 0) {
+			                            const enabledStreams = streams.filter(s => s.enabled);
+			                            streamsInfo = \`Streams: \${enabledStreams.length}/\${streams.length} enabled\`;
+			                        } else {
+			                            streamsInfo = 'No streams available';
+			                        }
+			                    } else {
+			                        streamsInfo = 'Streams: Error loading';
+			                    }
+			                } catch (error) {
+			                    streamsInfo = 'Streams: Error loading';
+			                }
+
+			                // Create camera feed display
+			                let videoElement = '';
+			                if (streams && streams.length > 0) {
+			                    const enabledStreams = streams.filter(s => s.enabled);
+			                    if (enabledStreams.length > 0) {
+			                        // Show live camera feed using snapshots
+			                        videoElement = \`
+			                            <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: #000;">
+			                                <img id="camera-feed-\${camera.id}"
+			                                     src="/protect/cameras/\${camera.id}/feed?refresh=true"
+			                                     style="width: 100%; height: 100%; object-fit: cover;"
+			                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+			                                     alt="Camera Feed">
+			                                <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
+			                                    <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+			                                    <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">\${camera.name || 'Camera'}</div>
+			                                    <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
+			                                        Live feed unavailable<br>
+			                                        <small>Showing static snapshot</small>
+			                                    </div>
+			                                </div>
+			                                <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    \${enabledStreams.length} Stream\${enabledStreams.length > 1 ? 's' : ''}
+			                                </div>
+			                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    \${statusText}
+			                                </div>
+			                                <div style="position: absolute; bottom: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    Live Feed
+			                                </div>
+			                            </div>
+			                        \`;
+			                    } else {
+			                        // No enabled streams
+			                        videoElement = \`
+			                            <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+			                                <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+			                                <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">\${camera.name || 'Camera'}</div>
+			                                <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
+			                                    No streams available<br>
+			                                    <small>Check camera configuration</small>
+			                                </div>
+			                                <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                    \${statusText}
+			                                </div>
+			                            </div>
+			                        \`;
+			                    }
+			                } else {
+			                    // No streams at all
+			                    videoElement = \`
+			                        <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+			                            <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+			                            <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">\${camera.name || 'Camera'}</div>
+			                            <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
+			                                No streams configured<br>
+			                                <small>Check API connection</small>
+			                            </div>
+			                            <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+			                                \${statusText}
+			                            </div>
+			                        </div>
+			                    \`;
+			                }
+
 			                cameraCard.innerHTML = \`
 			                    <div class="camera-feed">
-			                        <div>Camera Feed<br><small>RTSP: \${camera.channels?.[0]?.isRtspEnabled ? 'Available' : 'Not Available'}</small></div>
+			                        \${videoElement || \`<div style="padding: 50px; text-align: center; background: #f0f0f0; color: #666;">No video stream available</div>\`}
+			                        <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">\${streamsInfo}</div>
 			                    </div>
 			                    <div class="camera-info">
 			                        <div class="camera-name">\${camera.name || 'Unknown Camera'}</div>
@@ -1236,10 +1789,141 @@ describe('Hello World worker', () => {
 			                \`;
 
 			                cameraGrid.appendChild(cameraCard);
-			            });
+			            }
 
 			            document.getElementById('cameraSection').innerHTML = '';
 			            document.getElementById('cameraSection').appendChild(cameraGrid);
+
+			            // Start camera refresh after a short delay to let images load
+			            setTimeout(() => {
+			                startCameraRefresh();
+			            }, 1000);
+			        }
+
+			        // Refresh camera feeds periodically
+			        function refreshCameraFeeds() {
+			            const cameraFeeds = document.querySelectorAll('img[id^="camera-feed-"]');
+			            cameraFeeds.forEach(img => {
+			                const currentSrc = img.src;
+			                // Add timestamp to force refresh
+			                const separator = currentSrc.includes('?') ? '&' : '?';
+			                img.src = currentSrc + separator + 't=' + Date.now();
+			            });
+			        }
+
+			        // Set up periodic refresh for camera feeds (every 5 seconds)
+			        let cameraRefreshInterval;
+			        function startCameraRefresh() {
+			            if (cameraRefreshInterval) {
+			                clearInterval(cameraRefreshInterval);
+			            }
+			            cameraRefreshInterval = setInterval(refreshCameraFeeds, 5000);
+			        }
+
+			        function stopCameraRefresh() {
+			            if (cameraRefreshInterval) {
+			                clearInterval(cameraRefreshInterval);
+			                cameraRefreshInterval = null;
+			            }
+			        }
+
+			        // Load webhook events
+			        async function loadWebhookEvents() {
+			            if (!apiKey) {
+			                document.getElementById('webhookSection').innerHTML =
+			                    '<div class="loading">Enter API key above to view webhook events</div>';
+			                return;
+			            }
+
+			            document.getElementById('webhookSection').innerHTML =
+			                '<div class="loading">Loading webhook events...</div>';
+
+			            try {
+			                const response = await fetch('/webhook/events', {
+			                    headers: {
+			                        'x-api-key': apiKey
+			                    }
+			                });
+
+			                if (!response.ok) {
+			                    throw new Error(\`HTTP \${response.status}: \${response.statusText}\`);
+			                }
+
+			                const data = await response.json();
+			                await displayWebhookEvents(data.events || []);
+			            } catch (error) {
+			                document.getElementById('webhookSection').innerHTML =
+			                    \`<div class="error">Error loading webhook events: \${error.message}</div>\`;
+			            }
+			        }
+
+			        async function displayWebhookEvents(events) {
+			            if (events.length === 0) {
+			                document.getElementById('webhookSection').innerHTML =
+			                    '<div class="loading">No webhook events found</div>';
+			                return;
+			            }
+
+			            const webhookContainer = document.createElement('div');
+			            webhookContainer.innerHTML = \`
+			                <div class="webhook-refresh">
+			                    <button onclick="loadWebhookEvents()" class="btn">Refresh Events</button>
+			                </div>
+			            \`;
+
+			            const webhookEvents = document.createElement('div');
+			            webhookEvents.className = 'webhook-events';
+
+			            events.forEach(event => {
+			                const eventElement = document.createElement('div');
+			                eventElement.className = 'webhook-event';
+
+			                const timestamp = new Date(event.timestamp).toLocaleString();
+			                const eventType = event.eventType || event.type || 'unknown';
+			                const cameraId = event.cameraId || event.camera || 'unknown';
+
+			                let thumbnailHtml = '';
+			                if (event.thumbnail_r2_key) {
+			                    thumbnailHtml = \`
+			                        <img src="/fetch/\${event.thumbnail_r2_key}"
+			                             alt="Event thumbnail"
+			                             class="webhook-thumbnail"
+			                             onerror="this.style.display='none'">
+			                    \`;
+			                }
+
+			                eventElement.innerHTML = \`
+			                    <div class="webhook-header">
+			                        <span class="webhook-event-type">\${eventType.toUpperCase()}</span>
+			                        <span class="webhook-timestamp">\${timestamp}</span>
+			                    </div>
+			                    <div class="webhook-details">
+			                        <div class="webhook-detail">
+			                            <strong>Event ID:</strong> \${event.eventId || event.id || 'N/A'}
+			                        </div>
+			                        <div class="webhook-detail">
+			                            <strong>Camera ID:</strong> \${cameraId}
+			                        </div>
+			                        <div class="webhook-detail">
+			                            <strong>Processed:</strong> \${event.processed ? 'Yes' : 'No'}
+			                        </div>
+			                        <div class="webhook-detail">
+			                            <strong>Patrol Run:</strong> \${event.patrol_run_id || 'N/A'}
+			                        </div>
+			                    </div>
+			                    \${thumbnailHtml}
+			                    <div class="webhook-raw">
+			                        <strong>Raw Payload:</strong><br>
+			                        <pre>\${JSON.stringify(event.rawPayload || event, null, 2)}</pre>
+			                    </div>
+			                \`;
+
+			                webhookEvents.appendChild(eventElement);
+			            });
+
+			            webhookContainer.appendChild(webhookEvents);
+			            document.getElementById('webhookSection').innerHTML = '';
+			            document.getElementById('webhookSection').appendChild(webhookContainer);
 			        }
 
 			        // Smooth scrolling for navigation links

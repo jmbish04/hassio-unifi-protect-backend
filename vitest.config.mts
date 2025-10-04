@@ -19,6 +19,11 @@ export default defineWorkersConfig({
 				'**/public/**'
 			],
 		},
+		reporter: ['verbose', 'json'],
+		outputFile: {
+			json: './test-results.json',
+			verbose: './test-results.txt'
+		},
 		globals: true,
 		setupFiles: ['./test/setup.ts'],
 		testTimeout: 10000,

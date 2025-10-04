@@ -1,0 +1,672 @@
+npm warn config optional Use `--omit=optional` to exclude optional dependencies, or
+npm warn config `--include=optional` to include them.
+npm warn config
+npm warn config       Default value does install optional deps unless otherwise omitted.
+
+> unifi-protect-api@0.0.0 test
+> vitest
+
+
+ RUN  v3.2.4 /Volumes/Projects/workers/unifi-protect-api
+
+Using vars defined in .dev.vars
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mAI bindings always access remote resources, and so may incur usage charges even in local dev. To suppress this warning, set `remote: true` for the binding definition in your configuration file.[0m
+
+
+[vpw:info] Starting isolated runtimes for vitest.config.mts...
+ ✓ test/utils/response.test.ts > Response Utils > json > should create a JSON response with default status 200 11ms
+ ✓ test/utils/response.test.ts > Response Utils > json > should create a JSON response with custom status 19ms
+ ✓ test/utils/response.test.ts > Response Utils > json > should create a JSON response with custom headers 11ms
+ ✓ test/utils/response.test.ts > Response Utils > json > should serialize complex objects correctly 15ms
+ ✓ test/utils/response.test.ts > Response Utils > json > should handle circular references gracefully 26ms
+ ✓ test/utils/response.test.ts > Response Utils > json > should handle undefined and null values 14ms
+ × test/index.test.ts > Worker Endpoints > Static Assets > should serve index.html for root path 9ms
+   → expected "spy" to be called with arguments: [ ObjectContaining{…} ]
+
+Number of calls: 0
+
+ × test/index.test.ts > Worker Endpoints > Static Assets > should serve openapi.json 3ms
+   → expected "spy" to be called with arguments: [ Request{} ]
+
+Number of calls: 0
+
+ × test/index.test.ts > Worker Endpoints > Webhook Endpoint > should handle webhook events 6ms
+   → expected '{"message": "test"}' to be 'ok' // Object.is equality
+ × test/index.test.ts > Worker Endpoints > Webhook Endpoint > should handle invalid JSON in webhook 5ms
+   → expected 200 to be 400 // Object.is equality
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle the actual API response format from unifi-cameras.hacolby.app 14ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle empty camera list from real API 13ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle real API streams response format 13ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle streams with proxy not running 19ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle streams with only RTSP URL 13ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle streams with only HLS URL 15ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should successfully fetch and parse cameras from API 17ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should handle empty camera list from API 14ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should handle API authentication failure 19ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should handle API server error 15ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should handle network errors 14ms
+ × test/services/protect-api.test.ts > ProtectApiService > login > should login successfully 8ms
+   → expected "spy" to be called with arguments: [ …(2) ]
+
+Received: 
+
+  1st spy call:
+
+  [
+-   "https://test-protect.example.com/api/auth/login",
+-   ObjectContaining {
++   "https://test-protect.example.com/protect/login",
++   {
+      "body": "{\"username\":\"test-user\",\"password\":\"test-password\"}",
+      "headers": {
++       "Authorization": "Bearer test-api-key",
+        "Content-Type": "application/json",
+      },
+      "method": "POST",
+    },
+  ]
+
+
+Number of calls: 1
+
+ ✓ test/services/protect-api.test.ts > ProtectApiService > login > should handle login failure 16ms
+ ✓ test/services/protect-api.test.ts > ProtectApiService > fetchBootstrapData > should fetch bootstrap data successfully 15ms
+ ✓ test/services/protect-api.test.ts > ProtectApiService > fetchBootstrapData > should retry with new login on 401 15ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should run security sweep successfully 15ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should generate unique run IDs 18ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should include trigger in result 14ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should handle focus camera option 14ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should handle different trigger types 24ms
+ ✓ test/health-check.test.ts > Quick Health Check > should verify service is up and running 133ms
+ ✓ test/health-check.test.ts > Quick Health Check > should verify cameras endpoint is accessible 78ms
+ × test/index.test.ts > Worker Endpoints > Security Sweep Endpoint > should trigger security sweep via GET 10ms
+   → expected { message: 'test' } to match object { runId: 'test-run-123', …(1) }
+(1 matching property omitted from actual)
+ × test/index.test.ts > Worker Endpoints > Security Sweep Endpoint > should trigger security sweep via POST 5ms
+   → expected { message: 'test' } to match object { runId: 'test-run-123', …(1) }
+(1 matching property omitted from actual)
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Login > should handle protect login 4ms
+   → expected { message: 'test' } to match object { …(2) }
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > API Health and Connectivity > should have a healthy status 16ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > API Health and Connectivity > should have test summary information 16ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > API Health and Connectivity > should have valid OpenAPI specification 19ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > API Health and Connectivity > should have all expected endpoints in OpenAPI spec 16ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Real API Response Format Tests > should handle empty streams response 28ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > API Authentication Tests > should handle 401 unauthorized response 16ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > API Authentication Tests > should handle 403 forbidden response 20ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > API Authentication Tests > should handle 404 not found response 17ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > API Authentication Tests > should handle 502 bad gateway response 11ms
+ × test/services/protect-api.test.ts > ProtectApiService > getCameras > should return formatted camera data 12ms
+   → Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ × test/services/protect-api.test.ts > ProtectApiService > getCameras > should handle empty camera list 3ms
+   → Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ × test/services/protect-api.test.ts > ProtectApiService > getCamera > should return specific camera by ID 8ms
+   → Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ × test/services/protect-api.test.ts > ProtectApiService > getCamera > should return null for non-existent camera 5ms
+   → Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should throw error when PROTECT_API is not configured 16ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should handle malformed JSON response 28ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameras() - Service Layer > should handle missing items field in response 14ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameraStreams() - Service Layer > should successfully fetch camera streams 19ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameraStreams() - Service Layer > should handle streams API authentication failure 17ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should generate meaningful summary 18ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should return observations array 14ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runSecuritySweep > should handle errors gracefully 23ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runId generation > should generate unique IDs in runSecuritySweep 12ms
+ ✓ test/services/security-sweep.test.ts > SecuritySweepService > runId generation > should generate UUID-like format 17ms
+ ✓ test/index.spec.ts > Hello World worker > responds with Hello World! (unit style) 21ms
+ ✓ test/index.spec.ts > Hello World worker > responds with Hello World! (integration style) 19ms
+ ✓ test/health-check.test.ts > Quick Health Check > should verify OpenAPI spec is accessible 89ms
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Cameras > should get all cameras with valid API key 5ms
+   → Target cannot be null or undefined.
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Cameras > should reject request without API key 4ms
+   → expected 200 to be 401 // Object.is equality
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Cameras > should reject request with invalid API key 4ms
+   → expected 200 to be 401 // Object.is equality
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Individual Camera > should get specific camera with valid API key 7ms
+   → expected { message: 'test' } to match object { id: 'camera-1', name: 'Test Camera' }
+(1 matching property omitted from actual)
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Public Endpoints (No Authentication Required) > should serve root endpoint 66ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Edge Cases and Error Scenarios > should handle malformed JSON in API response 12ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Edge Cases and Error Scenarios > should handle network timeout 19ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Edge Cases and Error Scenarios > should handle DNS resolution failure 23ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Edge Cases and Error Scenarios > should handle very large response body 25ms
+ × test/services/protect-api.test.ts > ProtectApiService > getCameraStreams > should return camera streams with RTSP URLs 6ms
+   → expected [] to have a length of 2 but got +0
+ × test/services/protect-api.test.ts > ProtectApiService > getCameraStreams > should throw error for non-existent camera 4ms
+   → promise resolved "[]" instead of rejecting
+ ✓ test/services/protect-api.test.ts > ProtectApiService > validateApiKey > should validate correct API key 27ms
+ × test/services/protect-api.test.ts > ProtectApiService > validateApiKey > should reject incorrect API key 7ms
+   → expected true to be false // Object.is equality
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameraStreams() - Service Layer > should return empty array when no streams available 13ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameraStreams() - Service Layer > should handle streams API errors gracefully 20ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameraSnapshot() - Service Layer > should create placeholder snapshot when no snapshot endpoint available 22ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > getCameraSnapshot() - Service Layer > should throw error when PROTECT_API is not configured 30ms
+ ✓ test/camera-integration.test.ts > Camera Integration Tests - Real API Format > Edge Cases and Error Scenarios > should handle response with unexpected structure 12ms
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Individual Camera > should return 404 for non-existent camera 14ms
+   → Cannot create property 'validateApiKey' on string 'https://test-protect.example.com'
+ × test/index.test.ts > Worker Endpoints > Protect API Endpoints > Camera Streams > should get camera streams with valid API key 3ms
+   → Target cannot be null or undefined.
+ ✓ test/index.test.ts > Cron Trigger > should handle scheduled events 5ms
+ × test/index.test.ts > Queue Consumer > should process queue messages 4ms
+   → expected "spy" to be called at least once
+ × test/index.test.ts > Queue Consumer > should retry failed messages 3ms
+   → expected "spy" to be called at least once
+ × test/index.test.ts > 404 Handling > should return 404 for unknown endpoints 5ms
+   → expected 200 to be 404 // Object.is equality
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > API Endpoint Unit Tests > should validate API key correctly 9ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > API Endpoint Unit Tests > should handle missing API key validation 12ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > API Endpoint Unit Tests > should validate against configured WORKER_API_KEY when set 10ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > Error Handling and Edge Cases > should handle malformed camera data gracefully 5ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > Error Handling and Edge Cases > should handle null/undefined values in camera data 8ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > Error Handling and Edge Cases > should handle very large camera lists 7ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > Performance and Logging > should log API calls and responses 5ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Public Endpoints (No Authentication Required) > should require authentication for UI endpoint 52ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Public Endpoints (No Authentication Required) > should require authentication for agent instructions page 91ms
+ ✓ test/camera-endpoint.test.ts > Camera Endpoint Tests > Performance and Logging > should handle API timeouts gracefully 110ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should require API key for cameras endpoint 92ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should return empty camera list with test API key 38ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should require API key for bootstrap endpoint 42ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should require API key for bootstrap endpoint with test key 40ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should handle login endpoint 514ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should handle camera streams endpoint with test camera ID 69ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Protected Endpoints (Authentication Required) > should handle specific camera endpoint with test camera ID 80ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Proxy Endpoints > should handle HLS proxy start endpoint 340ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Proxy Endpoints > should handle HLS proxy stop endpoint 119ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Proxy Endpoints > should handle HLS file endpoint 93ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Proxy Endpoints > should handle session token endpoint 100ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Error Handling > should return 404 for non-existent endpoints 119ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Error Handling > should handle malformed JSON in POST requests 806ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Error Handling > should handle missing required parameters 170ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Performance and Response Times > should respond to health check within reasonable time 112ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Performance and Response Times > should respond to cameras endpoint within reasonable time 85ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Endpoint > should accept webhook POST requests 109ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Endpoint > should handle webhook without thumbnail 38ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Endpoint > should handle malformed webhook data gracefully 43ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Events Endpoint > should require API key authentication 38ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > API Response Format Validation > should return valid JSON for all endpoints 422ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Events Endpoint > should return webhook events with valid API key 106ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Events Endpoint > should return events in descending timestamp order 82ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > API Response Format Validation > should have consistent error response format 46ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Service Status and Monitoring > should report service uptime 3ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Service Status and Monitoring > should have valid test summary 3ms
+ ✓ test/real-api-integration.test.ts > Real API Integration Tests > Service Status and Monitoring > should be accessible from different regions 44ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Webhook Events Endpoint > should limit results to 20 events 65ms
+ ✓ test/webhook.test.ts > Webhook API Tests > R2 Fetch Endpoint > should return 404 for non-existent R2 objects 92ms
+ × test/api.test.ts > API Endpoint Tests > Health Check Endpoints > should respond to security sweep endpoint 4143ms
+   → expected '{"runId":"04d652d8-b069-4985-945f-67b…' to be 'ok' // Object.is equality
+ ✓ test/api.test.ts > API Endpoint Tests > UniFi Protect API Endpoints > should require API key for cameras endpoint 41ms
+ ✓ test/webhook.test.ts > Webhook API Tests > R2 Fetch Endpoint > should handle R2 fetch requests 6833ms
+ ✓ test/api.test.ts > API Endpoint Tests > UniFi Protect API Endpoints > should return cameras with valid API key 2829ms
+ ✓ test/api.test.ts > API Endpoint Tests > UniFi Protect API Endpoints > should return specific camera with valid API key 141ms
+ ✓ test/api.test.ts > API Endpoint Tests > UniFi Protect API Endpoints > should return camera streams with valid API key 63ms
+ ✓ test/api.test.ts > API Endpoint Tests > Static Assets > should serve favicon.ico 31ms
+ ✓ test/api.test.ts > API Endpoint Tests > Static Assets > should serve index.html 106ms
+ ✓ test/api.test.ts > API Endpoint Tests > Static Assets > should serve OpenAPI spec 42ms
+ ✓ test/api.test.ts > API Endpoint Tests > Error Handling > should return 404 for non-existent endpoints 98ms
+ ✓ test/api.test.ts > API Endpoint Tests > Error Handling > should handle malformed JSON in webhook 3436ms
+ ✓ test/webhook.test.ts > Webhook API Tests > Integration Tests > should process webhook and make it available via events endpoint 8472ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 25 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  test/api.test.ts > API Endpoint Tests > Health Check Endpoints > should respond to security sweep endpoint
+AssertionError: expected '{"runId":"04d652d8-b069-4985-945f-67b…' to be 'ok' // Object.is equality
+
+Expected: "ok"
+Received: "{"runId":"04d652d8-b069-4985-945f-67b6ceb152b4","ts":1759535905949,"trigger":"api","summary":"All clear","observations":[]}"
+
+ ❯ test/api.test.ts:38:22
+     36|       expect(response.status).toBe(200);
+     37|       const result = await response.text();
+     38|       expect(result).toBe('ok');
+       |                      ^
+     39|     });
+     40|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Static Assets > should serve index.html for root path
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…} ]
+
+Number of calls: 0
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:68:36
+     66| 
+     67|       expect(response.status).toBe(200);
+     68|       expect(mockEnv.ASSETS.fetch).toHaveBeenCalledWith(
+       |                                    ^
+     69|         expect.objectContaining({
+     70|           url: 'https://test.example.com/index.html'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Static Assets > should serve openapi.json
+AssertionError: expected "spy" to be called with arguments: [ Request{} ]
+
+Number of calls: 0
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:81:36
+     79| 
+     80|       expect(response.status).toBe(200);
+     81|       expect(mockEnv.ASSETS.fetch).toHaveBeenCalledWith(request);
+       |                                    ^
+     82|     });
+     83|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Webhook Endpoint > should handle webhook events
+AssertionError: expected '{"message": "test"}' to be 'ok' // Object.is equality
+
+Expected: "ok"
+Received: "{"message": "test"}"
+
+ ❯ test/index.test.ts:98:37
+     96| 
+     97|       expect(response.status).toBe(200);
+     98|       expect(await response.text()).toBe('ok');
+       |                                     ^
+     99|     });
+    100| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Webhook Endpoint > should handle invalid JSON in webhook
+AssertionError: expected 200 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 200
+
+ ❯ test/index.test.ts:112:31
+    110|       const response = await self.fetch(request, { env: mockEnv } as a…
+    111| 
+    112|       expect(response.status).toBe(400);
+       |                               ^
+    113|       expect(await response.text()).toBe('bad json');
+    114|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Security Sweep Endpoint > should trigger security sweep via GET
+AssertionError: expected { message: 'test' } to match object { runId: 'test-run-123', …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "runId": "test-run-123",
+-   "trigger": "api",
++   "message": "test",
+  }
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:125:20
+    123|       expect(response.status).toBe(200);
+    124|       const data = await response.json();
+    125|       expect(data).toMatchObject({
+       |                    ^
+    126|         runId: 'test-run-123',
+    127|         trigger: 'api'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Security Sweep Endpoint > should trigger security sweep via POST
+AssertionError: expected { message: 'test' } to match object { runId: 'test-run-123', …(1) }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "runId": "test-run-123",
+-   "trigger": "api",
++   "message": "test",
+  }
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:144:20
+    142|       expect(response.status).toBe(200);
+    143|       const data = await response.json();
+    144|       expect(data).toMatchObject({
+       |                    ^
+    145|         runId: 'test-run-123',
+    146|         trigger: 'api'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Login > should handle protect login
+AssertionError: expected { message: 'test' } to match object { …(2) }
+
+- Expected
++ Received
+
+  {
+-   "message": "Logged in successfully",
+-   "status": "success",
++   "message": "test",
+  }
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:162:22
+    160|         expect(response.status).toBe(200);
+    161|         const data = await response.json();
+    162|         expect(data).toMatchObject({
+       |                      ^
+    163|           message: 'Logged in successfully',
+    164|           status: 'success'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Cameras > should get all cameras with valid API key
+AssertionError: Target cannot be null or undefined.
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:181:30
+    179|         expect(response.status).toBe(200);
+    180|         const data = await response.json() as any;
+    181|         expect(data.cameras).toHaveLength(1);
+       |                              ^
+    182|         expect(data.cameras[0]).toMatchObject({
+    183|           id: 'camera-1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Cameras > should reject request without API key
+AssertionError: expected 200 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 200
+
+ ❯ test/index.test.ts:193:33
+    191|         const response = await self.fetch(request, { env: mockEnv } as…
+    192| 
+    193|         expect(response.status).toBe(401);
+       |                                 ^
+    194|         const data = await response.json() as any;
+    195|         expect(data.error).toBe('API key required');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Cameras > should reject request with invalid API key
+AssertionError: expected 200 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 200
+
+ ❯ test/index.test.ts:208:33
+    206|         const response = await self.fetch(request, { env: mockEnv } as…
+    207| 
+    208|         expect(response.status).toBe(401);
+       |                                 ^
+    209|         const data: any = await response.json();
+    210|         expect(data.error).toBe('Invalid API key');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Individual Camera > should get specific camera with valid API key
+AssertionError: expected { message: 'test' } to match object { id: 'camera-1', name: 'Test Camera' }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "id": "camera-1",
+-   "name": "Test Camera",
++   "message": "test",
+  }
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:226:22
+    224|         expect(response.status).toBe(200);
+    225|         const data = await response.json();
+    226|         expect(data).toMatchObject({
+       |                      ^
+    227|           id: 'camera-1',
+    228|           name: 'Test Camera'
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Individual Camera > should return 404 for non-existent camera
+TypeError: Cannot create property 'validateApiKey' on string 'https://test-protect.example.com'
+ ❯ test/index.test.ts:234:38
+    232|       it('should return 404 for non-existent camera', async () => {
+    233|         // Mock camera not found
+    234|         (mockEnv.PROTECT_API as any).validateApiKey = vi.fn().mockRetu…
+       |                                      ^
+    235|         (mockEnv.PROTECT_API as any).getCamera = vi.fn().mockResolvedV…
+    236| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/25]⎯
+
+ FAIL  test/index.test.ts > Worker Endpoints > Protect API Endpoints > Camera Streams > should get camera streams with valid API key
+AssertionError: Target cannot be null or undefined.
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:263:30
+    261|         expect(response.status).toBe(200);
+    262|         const data = await response.json() as { streams: Array<{ name:…
+    263|         expect(data.streams).toHaveLength(1);
+       |                              ^
+    264|         expect(data.streams[0]).toMatchObject({
+    265|           name: 'High',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/25]⎯
+
+ FAIL  test/index.test.ts > Queue Consumer > should process queue messages
+AssertionError: expected "spy" to be called at least once
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:307:41
+    305|       // await worker.queue(mockBatch, mockEnv, {} as ExecutionContext…
+    306| 
+    307|       expect(mockBatch.messages[0].ack).toHaveBeenCalled();
+       |                                         ^
+    308|     });
+    309| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/25]⎯
+
+ FAIL  test/index.test.ts > Queue Consumer > should retry failed messages
+AssertionError: expected "spy" to be called at least once
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/index.test.ts:329:43
+    327|       // await worker.queue(mockBatch, mockEnv, {} as ExecutionContext…
+    328| 
+    329|       expect(mockBatch.messages[0].retry).toHaveBeenCalled();
+       |                                           ^
+    330|       expect(consoleSpy).toHaveBeenCalled();
+    331| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/25]⎯
+
+ FAIL  test/index.test.ts > 404 Handling > should return 404 for unknown endpoints
+AssertionError: expected 200 to be 404 // Object.is equality
+
+- Expected
++ Received
+
+- 404
++ 200
+
+ ❯ test/index.test.ts:345:31
+    343|       const response = await self.fetch(request, { env: mockEnv } as a…
+    344| 
+    345|       expect(response.status).toBe(404);
+       |                               ^
+    346|       expect(await response.text()).toBe('not found');
+    347|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > login > should login successfully
+AssertionError: expected "spy" to be called with arguments: [ …(2) ]
+
+Received: 
+
+  1st spy call:
+
+  [
+-   "https://test-protect.example.com/api/auth/login",
+-   ObjectContaining {
++   "https://test-protect.example.com/protect/login",
++   {
+      "body": "{\"username\":\"test-user\",\"password\":\"test-password\"}",
+      "headers": {
++       "Authorization": "Bearer test-api-key",
+        "Content-Type": "application/json",
+      },
+      "method": "POST",
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/services/protect-api.test.ts:40:25
+     38|       });
+     39| 
+     40|       expect(mockFetch).toHaveBeenCalledWith(
+       |                         ^
+     41|         'https://test-protect.example.com/api/auth/login',
+     42|         expect.objectContaining({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > getCameras > should return formatted camera data
+Error: Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ ❯ ProtectApiService.getCameras src/services/protect-api.ts:215:13
+    213|     } catch (error) {
+    214|       console.error('Cameras fetch error:', error);
+    215|       throw new Error(`Failed to fetch cameras: ${error instanceof Err…
+       |             ^
+    216|     }
+    217|   }
+ ❯ test/services/protect-api.test.ts:113:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > getCameras > should handle empty camera list
+Error: Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ ❯ ProtectApiService.getCameras src/services/protect-api.ts:215:13
+    213|     } catch (error) {
+    214|       console.error('Cameras fetch error:', error);
+    215|       throw new Error(`Failed to fetch cameras: ${error instanceof Err…
+       |             ^
+    216|     }
+    217|   }
+ ❯ test/services/protect-api.test.ts:129:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > getCamera > should return specific camera by ID
+Error: Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ ❯ ProtectApiService.getCameras src/services/protect-api.ts:215:13
+    213|     } catch (error) {
+    214|       console.error('Cameras fetch error:', error);
+    215|       throw new Error(`Failed to fetch cameras: ${error instanceof Err…
+       |             ^
+    216|     }
+    217|   }
+ ❯ ProtectApiService.getCamera src/services/protect-api.ts:223:21
+ ❯ test/services/protect-api.test.ts:140:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > getCamera > should return null for non-existent camera
+Error: Failed to fetch cameras: Failed to fetch cameras: 404 {"error":"Not found"}
+ ❯ ProtectApiService.getCameras src/services/protect-api.ts:215:13
+    213|     } catch (error) {
+    214|       console.error('Cameras fetch error:', error);
+    215|       throw new Error(`Failed to fetch cameras: ${error instanceof Err…
+       |             ^
+    216|     }
+    217|   }
+ ❯ ProtectApiService.getCamera src/services/protect-api.ts:223:21
+ ❯ test/services/protect-api.test.ts:152:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > getCameraStreams > should return camera streams with RTSP URLs
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ Proxy.methodWrapper Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1601:25
+ ❯ test/services/protect-api.test.ts:165:23
+    163|       const streams = await service.getCameraStreams('test-camera-1');
+    164| 
+    165|       expect(streams).toHaveLength(2);
+       |                       ^
+    166|       expect(streams[0]).toMatchObject({
+    167|         name: 'High',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > getCameraStreams > should throw error for non-existent camera
+AssertionError: promise resolved "[]" instead of rejecting
+
+- Expected: 
+Error {
+  "message": "rejected promise",
+}
+
++ Received: 
+[]
+
+ ❯ _a2.propertyGetter Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1480:27
+ ❯ Object.proxyGetter [as get] Volumes/Projects/workers/unifi-protect-api/node_modules/.vite/vitest/da39a3ee5e6b4b0d3255bfef95601890afd80709/deps_ssr/vitest___@vitest_expect___chai.js:1562:22
+ ❯ test/services/protect-api.test.ts:182:67
+    180|       const fetchBootstrapDataSpy = vi.spyOn(service, 'fetchBootstrapD…
+    181| 
+    182|       await expect(service.getCameraStreams('non-existent-camera')).re…
+       |                                                                   ^
+    183|         'Camera with ID non-existent-camera not found'
+    184|       );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/25]⎯
+
+ FAIL  test/services/protect-api.test.ts > ProtectApiService > validateApiKey > should reject incorrect API key
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ test/services/protect-api.test.ts:194:51
+    192| 
+    193|     it('should reject incorrect API key', () => {
+    194|       expect(service.validateApiKey('wrong-key')).toBe(false);
+       |                                                   ^
+    195|     });
+    196|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/25]⎯
+
+
+ Test Files  3 failed | 8 passed (11)
+      Tests  25 failed | 111 passed (136)
+   Start at  16:58:15
+   Duration  21.58s (transform 555ms, setup 203ms, collect 1.15s, tests 41.04s, environment 1ms, prepare 3.06s)
+
+JSON report written to /Volumes/Projects/workers/unifi-protect-api/test-results.json
+[vpw:debug] Shutting down runtimes...
+close timed out after 10000ms
+Tests closed successfully but something prevents Vite server from exiting
+You can try to identify the cause by enabling "hanging-process" reporter. See https://vitest.dev/config/#reporters

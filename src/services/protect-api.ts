@@ -142,6 +142,8 @@ export class ProtectApiService {
 
     try {
       console.log(`Fetching cameras from: ${camerasUrl}`);
+      console.log(`Using API key: ${this.env.PROTECT_API_KEY ? 'Set (length: ' + this.env.PROTECT_API_KEY.length + ')' : 'Not set'}`);
+
       const response = await fetch(camerasUrl, {
         method: 'GET',
         headers: {
@@ -151,6 +153,7 @@ export class ProtectApiService {
       });
 
       console.log(`Camera API response status: ${response.status}`);
+      console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -162,6 +165,7 @@ export class ProtectApiService {
       const items = data.items || [];
 
       console.log(`Found ${items.length} cameras in API response`);
+      console.log('Full API response:', JSON.stringify(data, null, 2));
 
       // If no cameras returned, log the issue but don't provide test data
       if (items.length === 0) {
@@ -170,6 +174,7 @@ export class ProtectApiService {
         console.warn('2. API authentication is failing');
         console.warn('3. API endpoint is incorrect');
         console.warn('4. Cameras are not online');
+        console.warn('5. UniFi Protect system is not accessible');
         return [];
       }
 
