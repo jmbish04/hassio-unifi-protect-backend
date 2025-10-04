@@ -403,6 +403,155 @@
 				margin: 1rem 0;
 			}
 
+			/* Unit Test Styles */
+			.unit-test-session {
+				background: white;
+				border: 1px solid #e9ecef;
+				border-radius: 8px;
+				margin: 1rem 0;
+				padding: 1.5rem;
+				box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+			}
+
+			.unit-test-session h3 {
+				color: #333;
+				margin-bottom: 1rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.session-status {
+				padding: 4px 12px;
+				border-radius: 20px;
+				font-size: 0.8rem;
+				font-weight: bold;
+				text-transform: uppercase;
+			}
+
+			.session-status.running {
+				background: #fff3cd;
+				color: #856404;
+			}
+
+			.session-status.completed {
+				background: #d4edda;
+				color: #155724;
+			}
+
+			.session-status.failed {
+				background: #f8d7da;
+				color: #721c24;
+			}
+
+			.session-status.cancelled {
+				background: #e2e3e5;
+				color: #383d41;
+			}
+
+			.session-meta {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+				gap: 1rem;
+				margin: 1rem 0;
+				font-size: 0.9rem;
+			}
+
+			.session-meta div {
+				display: flex;
+				justify-content: space-between;
+				padding: 0.5rem;
+				background: #f8f9fa;
+				border-radius: 4px;
+			}
+
+			.session-meta strong {
+				color: #495057;
+			}
+
+			.test-results {
+				margin-top: 1rem;
+			}
+
+			.test-result {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 0.75rem;
+				margin: 0.5rem 0;
+				background: #f8f9fa;
+				border-radius: 4px;
+				border-left: 4px solid #dee2e6;
+			}
+
+			.test-result.passed {
+				border-left-color: #28a745;
+				background: #d4edda;
+			}
+
+			.test-result.failed {
+				border-left-color: #dc3545;
+				background: #f8d7da;
+			}
+
+			.test-result.running {
+				border-left-color: #ffc107;
+				background: #fff3cd;
+			}
+
+			.test-result.error {
+				border-left-color: #6f42c1;
+				background: #e2e3e5;
+			}
+
+			.test-result.skipped {
+				border-left-color: #6c757d;
+				background: #e9ecef;
+			}
+
+			.test-name {
+				font-weight: 500;
+				color: #333;
+			}
+
+			.test-duration {
+				font-size: 0.8rem;
+				color: #6c757d;
+			}
+
+			.test-error {
+				font-size: 0.8rem;
+				color: #dc3545;
+				margin-top: 0.5rem;
+				font-family: monospace;
+				background: #f8f9fa;
+				padding: 0.5rem;
+				border-radius: 4px;
+			}
+
+			.unit-test-actions {
+				display: flex;
+				gap: 1rem;
+				margin: 1rem 0;
+			}
+
+			.unit-test-actions .btn {
+				padding: 8px 16px;
+				font-size: 0.9rem;
+			}
+
+			.loading {
+				text-align: center;
+				padding: 2rem;
+				color: #6c757d;
+			}
+
+			.no-sessions {
+				text-align: center;
+				padding: 3rem;
+				color: #6c757d;
+			}
+
 			@media (max-width: 768px) {
 				.nav-links {
 					flex-direction: column;
@@ -434,6 +583,7 @@
 					<li><a href="#health">Health Check</a></li>
 					<li><a href="#cameras">Cameras</a></li>
 					<li><a href="#webhooks">Webhooks</a></li>
+					<li><a href="#unit-tests">Unit Tests</a></li>
 					<li><a href="#api">API</a></li>
 					<li><a href="/openapi.json" target="_blank">OpenAPI Schema</a></li>
 				</ul>
@@ -504,6 +654,17 @@
 					</div>
 				</section>
 
+				<section id="unit-tests" class="section">
+					<h2>Unit Test Sessions</h2>
+					<div class="unit-test-actions">
+						<button onclick="loadUnitTestSessions()" class="btn">Refresh Sessions</button>
+						<button onclick="runWorkerSelfTest()" class="btn">Run Self Test</button>
+					</div>
+					<div id="unitTestSection">
+						<div class="loading">Enter API key above to view unit test sessions</div>
+					</div>
+				</section>
+
 				<section id="api" class="section">
 					<h2>API Endpoints</h2>
 					<ul class="endpoint-list">
@@ -571,6 +732,7 @@
 					runHealthCheck();
 					loadCameras();
 					loadWebhookEvents();
+					loadUnitTestSessions();
 				} else {
 					alert('Please enter a valid API key');
 				}
@@ -583,6 +745,7 @@
 					runHealthCheck();
 					loadCameras();
 					loadWebhookEvents();
+					loadUnitTestSessions();
 				}
 			});
 
@@ -979,6 +1142,229 @@
 					}
 				});
 			});
+
+			// Unit Test Functions
+			async function loadUnitTestSessions() {
+				if (!apiKey) {
+					alert('Please enter your API key first');
+					return;
+				}
+
+				const section = document.getElementById('unitTestSection');
+				section.innerHTML = '<div class="loading">Loading unit test sessions...</div>';
+
+				try {
+					const response = await fetch('/unit-tests/sessions', {
+						headers: {
+							'x-api-key': apiKey,
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(`Failed to fetch sessions: ${response.status}`);
+					}
+
+					const data = await response.json();
+					displayUnitTestSessions(data.sessions || []);
+				} catch (error) {
+					section.innerHTML = `<div class="error">Error loading unit test sessions: ${error.message}</div>`;
+				}
+			}
+
+			async function loadUnitTestSessionDetails(sessionId) {
+				if (!apiKey) {
+					alert('Please enter your API key first');
+					return;
+				}
+
+				try {
+					const [sessionResponse, testsResponse] = await Promise.all([
+						fetch(`/unit-tests/sessions/${sessionId}`, {
+							headers: { 'x-api-key': apiKey },
+						}),
+						fetch(`/unit-tests/sessions/${sessionId}/tests`, {
+							headers: { 'x-api-key': apiKey },
+						}),
+					]);
+
+					if (!sessionResponse.ok || !testsResponse.ok) {
+						throw new Error('Failed to fetch session details');
+					}
+
+					const sessionData = await sessionResponse.json();
+					const testsData = await testsResponse.json();
+
+					return {
+						session: sessionData.session,
+						tests: testsData.tests || [],
+						stats: testsData.stats || {}
+					};
+				} catch (error) {
+					console.error('Error loading session details:', error);
+					return null;
+				}
+			}
+
+			function displayUnitTestSessions(sessions) {
+				const section = document.getElementById('unitTestSection');
+
+				if (sessions.length === 0) {
+					section.innerHTML = '<div class="no-sessions">No unit test sessions found</div>';
+					return;
+				}
+
+				const sessionsHtml = sessions.map(session => `
+					<div class="unit-test-session">
+						<h3>
+							Session ${session.session_id}
+							<span class="session-status ${session.status}">${session.status}</span>
+						</h3>
+						<div class="session-meta">
+							<div>
+								<strong>Started:</strong>
+								<span>${new Date(session.timestamp_start).toLocaleString()}</span>
+							</div>
+							${session.timestamp_completed ? `
+								<div>
+									<strong>Completed:</strong>
+									<span>${new Date(session.timestamp_completed).toLocaleString()}</span>
+								</div>
+							` : ''}
+							<div>
+								<strong>Total Tests:</strong>
+								<span>${session.total_tests || 0}</span>
+							</div>
+							<div>
+								<strong>Completed:</strong>
+								<span>${session.completed_tests || 0}</span>
+							</div>
+							<div>
+								<strong>Failed:</strong>
+								<span>${session.failed_tests || 0}</span>
+							</div>
+						</div>
+						<div class="unit-test-actions">
+							<button onclick="loadSessionDetails('${session.session_id}')" class="btn">View Details</button>
+						</div>
+						<div id="session-${session.session_id}-details" class="test-results" style="display: none;">
+							<!-- Session details will be loaded here -->
+						</div>
+					</div>
+				`).join('');
+
+				section.innerHTML = sessionsHtml;
+			}
+
+			async function loadSessionDetails(sessionId) {
+				const detailsDiv = document.getElementById(`session-${sessionId}-details`);
+				detailsDiv.style.display = 'block';
+				detailsDiv.innerHTML = '<div class="loading">Loading session details...</div>';
+
+				const data = await loadUnitTestSessionDetails(sessionId);
+				if (!data) {
+					detailsDiv.innerHTML = '<div class="error">Failed to load session details</div>';
+					return;
+				}
+
+				const { session, tests, stats } = data;
+
+				const testsHtml = tests.length > 0 ? tests.map(test => `
+					<div class="test-result ${test.status}">
+						<div>
+							<div class="test-name">${test.test_name}</div>
+							${test.test_category ? `<div style="font-size: 0.8rem; color: #6c757d;">${test.test_category}</div>` : ''}
+							${test.error_message ? `<div class="test-error">${test.error_message}</div>` : ''}
+						</div>
+						<div>
+							${test.duration_ms ? `<div class="test-duration">${test.duration_ms}ms</div>` : ''}
+							<div style="font-size: 0.8rem; color: #6c757d;">
+								${test.timestamp_start ? new Date(test.timestamp_start).toLocaleString() : ''}
+							</div>
+						</div>
+					</div>
+				`).join('') : '<div class="no-sessions">No test results found</div>';
+
+				detailsDiv.innerHTML = `
+					<div class="session-meta">
+						<div>
+							<strong>Status:</strong>
+							<span class="session-status ${session.status}">${session.status}</span>
+						</div>
+						<div>
+							<strong>Total Tests:</strong>
+							<span>${stats.total || 0}</span>
+						</div>
+						<div>
+							<strong>Passed:</strong>
+							<span>${stats.completed || 0}</span>
+						</div>
+						<div>
+							<strong>Failed:</strong>
+							<span>${stats.failed || 0}</span>
+						</div>
+						<div>
+							<strong>Running:</strong>
+							<span>${stats.running || 0}</span>
+						</div>
+						<div>
+							<strong>Pending:</strong>
+							<span>${stats.pending || 0}</span>
+						</div>
+					</div>
+					<div class="test-results">
+						<h4>Test Results</h4>
+						${testsHtml}
+					</div>
+				`;
+			}
+
+			async function runWorkerSelfTest() {
+				if (!apiKey) {
+					alert('Please enter your API key first');
+					return;
+				}
+
+				const section = document.getElementById('unitTestSection');
+				section.innerHTML = '<div class="loading">Running worker self-test...</div>';
+
+				try {
+					const response = await fetch('/worker/self-test', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey,
+						},
+						body: JSON.stringify({
+							base_url: window.location.origin,
+							api_key: apiKey
+						}),
+					});
+
+					if (!response.ok) {
+						throw new Error(`Self-test failed: ${response.status}`);
+					}
+
+					const data = await response.json();
+
+					if (data.success) {
+						section.innerHTML = `
+							<div class="success">
+								<h3>Self-test completed successfully!</h3>
+								<p>Session ID: ${data.session_id}</p>
+								<p>Total Tests: ${data.summary.total_tests}</p>
+								<p>Passed: ${data.summary.passed}</p>
+								<p>Failed: ${data.summary.failed}</p>
+								<p>Errors: ${data.summary.errors}</p>
+								<button onclick="loadUnitTestSessions()" class="btn">View All Sessions</button>
+							</div>
+						`;
+					} else {
+						section.innerHTML = `<div class="error">Self-test failed: ${data.message || 'Unknown error'}</div>`;
+					}
+				} catch (error) {
+					section.innerHTML = `<div class="error">Error running self-test: ${error.message}</div>`;
+				}
+			}
 		</script>
 	</body>
 </html>
