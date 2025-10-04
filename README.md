@@ -60,22 +60,26 @@ Integration examples are available in the [`examples/`](./examples/) directory:
 ## API Endpoints
 
 ### Logging (No Auth Required for Writing)
+
 - `POST /logs` - Store log entries
 - `GET /logs` - Retrieve logs (auth required)
 - `GET /logs/stats` - Get statistics (auth required)
 
 ### UniFi Protect (Auth Required)
+
 - `GET /protect/cameras` - List cameras
 - `GET /protect/cameras/{id}/streams` - Get camera streams
 - `GET /protect/cameras/{id}/feed` - Live camera feed
 
 ### Webhooks
+
 - `POST /webhook` - Receive events
 - `GET /webhook/events` - Retrieve events (auth required)
 
 ## Development
 
 ### Prerequisites
+
 - Node.js 18+
 - Cloudflare account
 - UniFi Protect system

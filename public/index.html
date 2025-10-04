@@ -1,694 +1,697 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UniFi Protect API - Home Assistant Backend</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
-
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            padding: 1rem 0;
-            transition: all 0.3s ease;
-        }
-
-        .navbar.scrolled {
-            background: rgba(255, 255, 255, 0.98);
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            gap: 2rem;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: #667eea;
-        }
-
-        .main-content {
-            margin-top: 80px;
-            padding: 2rem;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .hero {
-            text-align: center;
-            padding: 4rem 0;
-            color: white;
-        }
-
-        .hero h1 {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            opacity: 0.9;
-        }
-
-        .cta-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: white;
-            color: #667eea;
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: 2px solid transparent;
-        }
-
-        .btn:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: white;
-            border-color: white;
-        }
-
-        .btn-secondary:hover {
-            background: white;
-            color: #667eea;
-        }
-
-        .section {
-            background: white;
-            margin: 2rem 0;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .section h2 {
-            color: #333;
-            margin-bottom: 1rem;
-            font-size: 2rem;
-        }
-
-        .api-key-section {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-        }
-
-        .api-key-input {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .status-card {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        .status-indicator {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 0.5rem;
-        }
-
-        .status-success {
-            background: #28a745;
-        }
-
-        .status-error {
-            background: #dc3545;
-        }
-
-        .status-loading {
-            background: #ffc107;
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .camera-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin: 1rem 0;
-        }
-
-        .camera-card {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 1rem;
-            text-align: center;
-        }
-
-        .camera-feed {
-            width: 100%;
-            height: 200px;
-            background: #000;
-            border-radius: 6px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.9rem;
-        }
-
-        .camera-info {
-            text-align: left;
-        }
-
-        .camera-name {
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-        }
-
-        .camera-status {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .webhook-events {
-            max-height: 600px;
-            overflow-y: auto;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            background: #f8f9fa;
-        }
-
-        .webhook-event {
-            background: white;
-            border-bottom: 1px solid #e9ecef;
-            padding: 1rem;
-            transition: background-color 0.2s ease;
-        }
-
-        .webhook-event:hover {
-            background: #f8f9fa;
-        }
-
-        .webhook-event:last-child {
-            border-bottom: none;
-        }
-
-        .webhook-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-
-        .webhook-event-type {
-            background: #667eea;
-            color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .webhook-timestamp {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .webhook-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        .webhook-detail {
-            font-size: 0.9rem;
-        }
-
-        .webhook-detail strong {
-            color: #333;
-        }
-
-        .webhook-thumbnail {
-            width: 100%;
-            max-width: 200px;
-            height: auto;
-            border-radius: 4px;
-            margin-top: 0.5rem;
-        }
-
-        .webhook-raw {
-            background: #f1f3f4;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 0.5rem;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            max-height: 100px;
-            overflow-y: auto;
-            margin-top: 0.5rem;
-        }
-
-        .webhook-refresh {
-            margin-bottom: 1rem;
-        }
-
-        .endpoint-list {
-            list-style: none;
-        }
-
-        .endpoint-list li {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 1rem;
-            margin: 0.5rem 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .method-badge {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: white;
-        }
-
-        .method-get {
-            background: #28a745;
-        }
-
-        .method-post {
-            background: #007bff;
-        }
-
-        .method-put {
-            background: #ffc107;
-            color: #333;
-        }
-
-        .method-delete {
-            background: #dc3545;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #666;
-        }
-
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            border-radius: 6px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            border-radius: 6px;
-            padding: 1rem;
-            margin: 1rem 0;
-        }
-
-        @media (max-width: 768px) {
-            .nav-links {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .hero h1 {
-                font-size: 2rem;
-            }
-
-            .cta-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .status-grid,
-            .camera-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <nav class="navbar" id="navbar">
-        <div class="nav-container">
-            <a href="#" class="logo">UniFi Protect API</a>
-            <ul class="nav-links">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#health">Health Check</a></li>
-                <li><a href="#cameras">Cameras</a></li>
-                <li><a href="#webhooks">Webhooks</a></li>
-                <li><a href="#api">API</a></li>
-                <li><a href="/openapi.json" target="_blank">OpenAPI Schema</a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <main class="main-content">
-        <div class="container">
-            <section id="home" class="hero">
-                <h1>UniFi Protect API</h1>
-                <p>Cloudflare Worker backend for UniFi Protect integration with Home Assistant</p>
-                <div class="cta-buttons">
-                    <a href="#health" class="btn">Health Check</a>
-                    <a href="/openapi.json" class="btn btn-secondary" target="_blank">API Documentation</a>
-                </div>
-            </section>
-
-            <section id="api-key" class="section">
-                <h2>API Authentication</h2>
-                <div class="api-key-section">
-                    <label for="apiKey">Enter your Worker API key to access protected endpoints:</label>
-                    <input type="password" id="apiKey" class="api-key-input" placeholder="Enter your Worker API key...">
-                    <button onclick="setApiKey()" class="btn">Set API Key</button>
-                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
-                        <strong>Note:</strong> This is the WORKER_API_KEY for authenticating with this worker, not the UniFi Protect API key.
-                    </p>
-                </div>
-            </section>
-
-            <section id="health" class="section">
-                <h2>Health Check</h2>
-                <div class="status-grid" id="statusGrid">
-                    <div class="status-card">
-                        <h3>API Status</h3>
-                        <span class="status-indicator status-loading" id="apiStatus"></span>
-                        <span id="apiStatusText">Checking...</span>
-                    </div>
-                    <div class="status-card">
-                        <h3>UniFi Protect</h3>
-                        <span class="status-indicator status-loading" id="protectStatus"></span>
-                        <span id="protectStatusText">Checking...</span>
-                    </div>
-                    <div class="status-card">
-                        <h3>Database</h3>
-                        <span class="status-indicator status-loading" id="dbStatus"></span>
-                        <span id="dbStatusText">Checking...</span>
-                    </div>
-                    <div class="status-card">
-                        <h3>Storage</h3>
-                        <span class="status-indicator status-loading" id="storageStatus"></span>
-                        <span id="storageStatusText">Checking...</span>
-                    </div>
-                </div>
-                <button onclick="runHealthCheck()" class="btn">Refresh Health Check</button>
-            </section>
-
-            <section id="cameras" class="section">
-                <h2>Camera Feeds</h2>
-                <div id="cameraSection">
-                    <div class="loading">Enter API key above to view camera feeds</div>
-                </div>
-            </section>
-
-            <section id="webhooks" class="section">
-                <h2>Webhook Events</h2>
-                <div id="webhookSection">
-                    <div class="loading">Enter API key above to view webhook events</div>
-                </div>
-            </section>
-
-            <section id="api" class="section">
-                <h2>API Endpoints</h2>
-                <ul class="endpoint-list">
-                    <li>
-                        <div>
-                            <span class="method-badge method-post">POST</span>
-                            <strong>/webhook</strong> - Webhook endpoint for events
-                        </div>
-                    </li>
-                    <li>
-                        <div>
-                            <span class="method-badge method-get">GET</span>
-                            <strong>/agent/security_sweep</strong> - Trigger security sweep
-                        </div>
-                    </li>
-                    <li>
-                        <div>
-                            <span class="method-badge method-post">POST</span>
-                            <strong>/protect/login</strong> - Login to UniFi Protect
-                        </div>
-                    </li>
-                    <li>
-                        <div>
-                            <span class="method-badge method-get">GET</span>
-                            <strong>/protect/cameras</strong> - Get all cameras (requires API key)
-                        </div>
-                    </li>
-                    <li>
-                        <div>
-                            <span class="method-badge method-get">GET</span>
-                            <strong>/protect/cameras/{id}</strong> - Get specific camera (requires API key)
-                        </div>
-                    </li>
-                    <li>
-                        <div>
-                            <span class="method-badge method-get">GET</span>
-                            <strong>/protect/cameras/{id}/streams</strong> - Get camera streams (requires API key)
-                        </div>
-                    </li>
-                </ul>
-            </section>
-        </div>
-    </main>
-
-    <script>
-        let apiKey = localStorage.getItem('unifi-protect-api-key') || '';
-
-        // Sticky navbar effect
-        window.addEventListener('scroll', function() {
-            const navbar = document.getElementById('navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
-
-        // Set API key
-        function setApiKey() {
-            const input = document.getElementById('apiKey');
-            apiKey = input.value.trim();
-            if (apiKey) {
-                localStorage.setItem('unifi-protect-api-key', apiKey);
-                input.value = '';
-                runHealthCheck();
-                loadCameras();
-                loadWebhookEvents();
-            } else {
-                alert('Please enter a valid API key');
-            }
-        }
-
-        // Load API key on page load
-        window.addEventListener('load', function() {
-            if (apiKey) {
-                document.getElementById('apiKey').value = apiKey;
-                runHealthCheck();
-                loadCameras();
-                loadWebhookEvents();
-            }
-        });
-
-        // Clean up when page is unloaded
-        window.addEventListener('beforeunload', function() {
-            stopCameraRefresh();
-        });
-
-        // Status configuration
-        const statuses = {
-            api: { element: 'apiStatus', text: 'apiStatusText' },
-            protect: { element: 'protectStatus', text: 'protectStatusText' },
-            db: { element: 'dbStatus', text: 'dbStatusText' },
-            storage: { element: 'storageStatus', text: 'storageStatusText' }
-        };
-
-        // Health check function
-        async function runHealthCheck() {
-            // Check API status
-            try {
-                const response = await fetch('/agent/security_sweep');
-                updateStatus('api', response.ok, response.ok ? 'Online' : 'Error');
-            } catch (error) {
-                updateStatus('api', false, 'Offline');
-            }
-
-            // Check UniFi Protect status and camera availability
-            try {
-                // First check if we can login
-                const loginResponse = await fetch('/protect/login', { method: 'POST' });
-                if (!loginResponse.ok) {
-                    updateStatus('protect', false, 'Login Failed');
-                    return;
-                }
-
-                // Then check if cameras are available
-                const camerasResponse = await fetch('/protect/cameras', {
-                    headers: {
-                        'x-api-key': apiKey
-                    }
-                });
-
-                if (camerasResponse.ok) {
-                    const camerasData = await camerasResponse.json();
-                    const cameras = camerasData.cameras || [];
-
-                    if (cameras.length > 0) {
-                        const onlineCameras = cameras.filter(cam => cam.state === 'CONNECTED').length;
-                        updateStatus('protect', true, `Connected (${onlineCameras}/${cameras.length} cameras online)`);
-                    } else {
-                        updateStatus('protect', false, 'Connected but no cameras found');
-                    }
-                } else {
-                    updateStatus('protect', false, 'Camera API Error');
-                }
-            } catch (error) {
-                updateStatus('protect', false, 'Offline');
-            }
-
-            // Check database (simulate with a simple endpoint)
-            try {
-                const response = await fetch('/agent/security_sweep');
-                updateStatus('db', response.ok, response.ok ? 'Connected' : 'Error');
-            } catch (error) {
-                updateStatus('db', false, 'Offline');
-            }
-
-            // Check storage (simulate)
-            updateStatus('storage', true, 'Available');
-        }
-
-        function updateStatus(service, success, text) {
-            const statusElement = document.getElementById(statuses[service].element);
-            const textElement = document.getElementById(statuses[service].text);
-
-            statusElement.className = `status-indicator ${success ? 'status-success' : 'status-error'}`;
-            textElement.textContent = text;
-        }
-
-        // Load cameras
-        async function loadCameras() {
-            if (!apiKey) {
-                document.getElementById('cameraSection').innerHTML =
-                    '<div class="loading">Enter API key above to view camera feeds</div>';
-                return;
-            }
-
-            document.getElementById('cameraSection').innerHTML =
-                '<div class="loading">Loading cameras...</div>';
-
-            try {
-                const response = await fetch('/protect/cameras', {
-                    headers: {
-                        'x-api-key': apiKey
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-                await displayCameras(data.cameras || []);
-            } catch (error) {
-                document.getElementById('cameraSection').innerHTML =
-                    `<div class="error">Error loading cameras: ${error.message}</div>`;
-            }
-        }
-
-        async function displayCameras(cameras) {
-            if (cameras.length === 0) {
-                document.getElementById('cameraSection').innerHTML = `
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>UniFi Protect API - Home Assistant Backend</title>
+		<style>
+			* {
+				margin: 0;
+				padding: 0;
+				box-sizing: border-box;
+			}
+
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+				line-height: 1.6;
+				color: #333;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				min-height: 100vh;
+			}
+
+			.navbar {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				background: rgba(255, 255, 255, 0.95);
+				backdrop-filter: blur(10px);
+				border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+				z-index: 1000;
+				padding: 1rem 0;
+				transition: all 0.3s ease;
+			}
+
+			.navbar.scrolled {
+				background: rgba(255, 255, 255, 0.98);
+				box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+			}
+
+			.nav-container {
+				max-width: 1200px;
+				margin: 0 auto;
+				padding: 0 2rem;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.logo {
+				font-size: 1.5rem;
+				font-weight: bold;
+				color: #667eea;
+				text-decoration: none;
+			}
+
+			.nav-links {
+				display: flex;
+				list-style: none;
+				gap: 2rem;
+			}
+
+			.nav-links a {
+				text-decoration: none;
+				color: #333;
+				font-weight: 500;
+				transition: color 0.3s ease;
+			}
+
+			.nav-links a:hover {
+				color: #667eea;
+			}
+
+			.main-content {
+				margin-top: 80px;
+				padding: 2rem;
+			}
+
+			.container {
+				max-width: 1200px;
+				margin: 0 auto;
+			}
+
+			.hero {
+				text-align: center;
+				padding: 4rem 0;
+				color: white;
+			}
+
+			.hero h1 {
+				font-size: 3rem;
+				margin-bottom: 1rem;
+				text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+			}
+
+			.hero p {
+				font-size: 1.2rem;
+				margin-bottom: 2rem;
+				opacity: 0.9;
+			}
+
+			.cta-buttons {
+				display: flex;
+				gap: 1rem;
+				justify-content: center;
+				flex-wrap: wrap;
+			}
+
+			.btn {
+				display: inline-block;
+				padding: 12px 24px;
+				background: white;
+				color: #667eea;
+				text-decoration: none;
+				border-radius: 8px;
+				font-weight: 600;
+				transition: all 0.3s ease;
+				border: 2px solid transparent;
+			}
+
+			.btn:hover {
+				background: #667eea;
+				color: white;
+				transform: translateY(-2px);
+				box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+			}
+
+			.btn-secondary {
+				background: transparent;
+				color: white;
+				border-color: white;
+			}
+
+			.btn-secondary:hover {
+				background: white;
+				color: #667eea;
+			}
+
+			.section {
+				background: white;
+				margin: 2rem 0;
+				padding: 2rem;
+				border-radius: 12px;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+			}
+
+			.section h2 {
+				color: #333;
+				margin-bottom: 1rem;
+				font-size: 2rem;
+			}
+
+			.api-key-section {
+				background: #f8f9fa;
+				border: 1px solid #e9ecef;
+				border-radius: 8px;
+				padding: 1.5rem;
+				margin: 1rem 0;
+			}
+
+			.api-key-input {
+				width: 100%;
+				padding: 12px;
+				border: 1px solid #ddd;
+				border-radius: 6px;
+				font-size: 1rem;
+				margin-bottom: 1rem;
+			}
+
+			.status-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+				gap: 1rem;
+				margin: 1rem 0;
+			}
+
+			.status-card {
+				background: #f8f9fa;
+				border: 1px solid #e9ecef;
+				border-radius: 8px;
+				padding: 1rem;
+				text-align: center;
+			}
+
+			.status-indicator {
+				width: 20px;
+				height: 20px;
+				border-radius: 50%;
+				display: inline-block;
+				margin-right: 0.5rem;
+			}
+
+			.status-success {
+				background: #28a745;
+			}
+
+			.status-error {
+				background: #dc3545;
+			}
+
+			.status-loading {
+				background: #ffc107;
+				animation: pulse 1.5s infinite;
+			}
+
+			@keyframes pulse {
+				0% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.5;
+				}
+				100% {
+					opacity: 1;
+				}
+			}
+
+			.camera-grid {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+				gap: 1rem;
+				margin: 1rem 0;
+			}
+
+			.camera-card {
+				background: #f8f9fa;
+				border: 1px solid #e9ecef;
+				border-radius: 8px;
+				padding: 1rem;
+				text-align: center;
+			}
+
+			.camera-feed {
+				width: 100%;
+				height: 200px;
+				background: #000;
+				border-radius: 6px;
+				margin-bottom: 1rem;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				color: white;
+				font-size: 0.9rem;
+			}
+
+			.camera-info {
+				text-align: left;
+			}
+
+			.camera-name {
+				font-weight: bold;
+				margin-bottom: 0.5rem;
+			}
+
+			.camera-status {
+				font-size: 0.9rem;
+				color: #666;
+			}
+
+			.webhook-events {
+				max-height: 600px;
+				overflow-y: auto;
+				border: 1px solid #e9ecef;
+				border-radius: 8px;
+				background: #f8f9fa;
+			}
+
+			.webhook-event {
+				background: white;
+				border-bottom: 1px solid #e9ecef;
+				padding: 1rem;
+				transition: background-color 0.2s ease;
+			}
+
+			.webhook-event:hover {
+				background: #f8f9fa;
+			}
+
+			.webhook-event:last-child {
+				border-bottom: none;
+			}
+
+			.webhook-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 0.5rem;
+			}
+
+			.webhook-event-type {
+				background: #667eea;
+				color: white;
+				padding: 0.25rem 0.5rem;
+				border-radius: 4px;
+				font-size: 0.8rem;
+				font-weight: bold;
+			}
+
+			.webhook-timestamp {
+				color: #666;
+				font-size: 0.9rem;
+			}
+
+			.webhook-details {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1rem;
+				margin-top: 0.5rem;
+			}
+
+			.webhook-detail {
+				font-size: 0.9rem;
+			}
+
+			.webhook-detail strong {
+				color: #333;
+			}
+
+			.webhook-thumbnail {
+				width: 100%;
+				max-width: 200px;
+				height: auto;
+				border-radius: 4px;
+				margin-top: 0.5rem;
+			}
+
+			.webhook-raw {
+				background: #f1f3f4;
+				border: 1px solid #e0e0e0;
+				border-radius: 4px;
+				padding: 0.5rem;
+				font-family: 'Courier New', monospace;
+				font-size: 0.8rem;
+				max-height: 100px;
+				overflow-y: auto;
+				margin-top: 0.5rem;
+			}
+
+			.webhook-refresh {
+				margin-bottom: 1rem;
+			}
+
+			.endpoint-list {
+				list-style: none;
+			}
+
+			.endpoint-list li {
+				background: #f8f9fa;
+				border: 1px solid #e9ecef;
+				border-radius: 6px;
+				padding: 1rem;
+				margin: 0.5rem 0;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+			}
+
+			.method-badge {
+				padding: 4px 8px;
+				border-radius: 4px;
+				font-size: 0.8rem;
+				font-weight: bold;
+				color: white;
+			}
+
+			.method-get {
+				background: #28a745;
+			}
+
+			.method-post {
+				background: #007bff;
+			}
+
+			.method-put {
+				background: #ffc107;
+				color: #333;
+			}
+
+			.method-delete {
+				background: #dc3545;
+			}
+
+			.loading {
+				text-align: center;
+				padding: 2rem;
+				color: #666;
+			}
+
+			.error {
+				background: #f8d7da;
+				color: #721c24;
+				border: 1px solid #f5c6cb;
+				border-radius: 6px;
+				padding: 1rem;
+				margin: 1rem 0;
+			}
+
+			.success {
+				background: #d4edda;
+				color: #155724;
+				border: 1px solid #c3e6cb;
+				border-radius: 6px;
+				padding: 1rem;
+				margin: 1rem 0;
+			}
+
+			@media (max-width: 768px) {
+				.nav-links {
+					flex-direction: column;
+					gap: 1rem;
+				}
+
+				.hero h1 {
+					font-size: 2rem;
+				}
+
+				.cta-buttons {
+					flex-direction: column;
+					align-items: center;
+				}
+
+				.status-grid,
+				.camera-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<nav class="navbar" id="navbar">
+			<div class="nav-container">
+				<a href="#" class="logo">UniFi Protect API</a>
+				<ul class="nav-links">
+					<li><a href="#home">Home</a></li>
+					<li><a href="#health">Health Check</a></li>
+					<li><a href="#cameras">Cameras</a></li>
+					<li><a href="#webhooks">Webhooks</a></li>
+					<li><a href="#api">API</a></li>
+					<li><a href="/openapi.json" target="_blank">OpenAPI Schema</a></li>
+				</ul>
+			</div>
+		</nav>
+
+		<main class="main-content">
+			<div class="container">
+				<section id="home" class="hero">
+					<h1>UniFi Protect API</h1>
+					<p>Cloudflare Worker backend for UniFi Protect integration with Home Assistant</p>
+					<div class="cta-buttons">
+						<a href="#health" class="btn">Health Check</a>
+						<a href="/openapi.json" class="btn btn-secondary" target="_blank">API Documentation</a>
+					</div>
+				</section>
+
+				<section id="api-key" class="section">
+					<h2>API Authentication</h2>
+					<div class="api-key-section">
+						<label for="apiKey">Enter your Worker API key to access protected endpoints:</label>
+						<input type="password" id="apiKey" class="api-key-input" placeholder="Enter your Worker API key..." />
+						<button onclick="setApiKey()" class="btn">Set API Key</button>
+						<p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666">
+							<strong>Note:</strong> This is the WORKER_API_KEY for authenticating with this worker, not the UniFi Protect API key.
+						</p>
+					</div>
+				</section>
+
+				<section id="health" class="section">
+					<h2>Health Check</h2>
+					<div class="status-grid" id="statusGrid">
+						<div class="status-card">
+							<h3>API Status</h3>
+							<span class="status-indicator status-loading" id="apiStatus"></span>
+							<span id="apiStatusText">Checking...</span>
+						</div>
+						<div class="status-card">
+							<h3>UniFi Protect</h3>
+							<span class="status-indicator status-loading" id="protectStatus"></span>
+							<span id="protectStatusText">Checking...</span>
+						</div>
+						<div class="status-card">
+							<h3>Database</h3>
+							<span class="status-indicator status-loading" id="dbStatus"></span>
+							<span id="dbStatusText">Checking...</span>
+						</div>
+						<div class="status-card">
+							<h3>Storage</h3>
+							<span class="status-indicator status-loading" id="storageStatus"></span>
+							<span id="storageStatusText">Checking...</span>
+						</div>
+					</div>
+					<button onclick="runHealthCheck()" class="btn">Refresh Health Check</button>
+				</section>
+
+				<section id="cameras" class="section">
+					<h2>Camera Feeds</h2>
+					<div id="cameraSection">
+						<div class="loading">Enter API key above to view camera feeds</div>
+					</div>
+				</section>
+
+				<section id="webhooks" class="section">
+					<h2>Webhook Events</h2>
+					<div id="webhookSection">
+						<div class="loading">Enter API key above to view webhook events</div>
+					</div>
+				</section>
+
+				<section id="api" class="section">
+					<h2>API Endpoints</h2>
+					<ul class="endpoint-list">
+						<li>
+							<div>
+								<span class="method-badge method-post">POST</span>
+								<strong>/webhook</strong> - Webhook endpoint for events
+							</div>
+						</li>
+						<li>
+							<div>
+								<span class="method-badge method-get">GET</span>
+								<strong>/agent/security_sweep</strong> - Trigger security sweep
+							</div>
+						</li>
+						<li>
+							<div>
+								<span class="method-badge method-post">POST</span>
+								<strong>/protect/login</strong> - Login to UniFi Protect
+							</div>
+						</li>
+						<li>
+							<div>
+								<span class="method-badge method-get">GET</span>
+								<strong>/protect/cameras</strong> - Get all cameras (requires API key)
+							</div>
+						</li>
+						<li>
+							<div>
+								<span class="method-badge method-get">GET</span>
+								<strong>/protect/cameras/{id}</strong> - Get specific camera (requires API key)
+							</div>
+						</li>
+						<li>
+							<div>
+								<span class="method-badge method-get">GET</span>
+								<strong>/protect/cameras/{id}/streams</strong> - Get camera streams (requires API key)
+							</div>
+						</li>
+					</ul>
+				</section>
+			</div>
+		</main>
+
+		<script>
+			let apiKey = localStorage.getItem('unifi-protect-api-key') || '';
+
+			// Sticky navbar effect
+			window.addEventListener('scroll', function () {
+				const navbar = document.getElementById('navbar');
+				if (window.scrollY > 50) {
+					navbar.classList.add('scrolled');
+				} else {
+					navbar.classList.remove('scrolled');
+				}
+			});
+
+			// Set API key
+			function setApiKey() {
+				const input = document.getElementById('apiKey');
+				apiKey = input.value.trim();
+				if (apiKey) {
+					localStorage.setItem('unifi-protect-api-key', apiKey);
+					input.value = '';
+					runHealthCheck();
+					loadCameras();
+					loadWebhookEvents();
+				} else {
+					alert('Please enter a valid API key');
+				}
+			}
+
+			// Load API key on page load
+			window.addEventListener('load', function () {
+				if (apiKey) {
+					document.getElementById('apiKey').value = apiKey;
+					runHealthCheck();
+					loadCameras();
+					loadWebhookEvents();
+				}
+			});
+
+			// Clean up when page is unloaded
+			window.addEventListener('beforeunload', function () {
+				stopCameraRefresh();
+			});
+
+			// Status configuration
+			const statuses = {
+				api: { element: 'apiStatus', text: 'apiStatusText' },
+				protect: { element: 'protectStatus', text: 'protectStatusText' },
+				db: { element: 'dbStatus', text: 'dbStatusText' },
+				storage: { element: 'storageStatus', text: 'storageStatusText' },
+			};
+
+			// Health check function
+			async function runHealthCheck() {
+				// Check API status
+				try {
+					const response = await fetch('/agent/security_sweep');
+					updateStatus('api', response.ok, response.ok ? 'Online' : 'Error');
+				} catch (error) {
+					updateStatus('api', false, 'Offline');
+				}
+
+				// Check UniFi Protect status and camera availability
+				try {
+					// First check if we can login
+					const loginResponse = await fetch('/protect/login', { method: 'POST' });
+					if (!loginResponse.ok) {
+						updateStatus('protect', false, 'Login Failed');
+						return;
+					}
+
+					// Then check if cameras are available
+					const camerasResponse = await fetch('/protect/cameras', {
+						headers: {
+							'x-api-key': apiKey,
+						},
+					});
+
+					if (camerasResponse.ok) {
+						const camerasData = await camerasResponse.json();
+						const cameras = camerasData.cameras || [];
+
+						if (cameras.length > 0) {
+							const onlineCameras = cameras.filter((cam) => cam.state === 'CONNECTED').length;
+							updateStatus('protect', true, `Connected (${onlineCameras}/${cameras.length} cameras online)`);
+						} else {
+							updateStatus('protect', false, 'Connected but no cameras found');
+						}
+					} else {
+						updateStatus('protect', false, 'Camera API Error');
+					}
+				} catch (error) {
+					updateStatus('protect', false, 'Offline');
+				}
+
+				// Check database (simulate with a simple endpoint)
+				try {
+					const response = await fetch('/agent/security_sweep');
+					updateStatus('db', response.ok, response.ok ? 'Connected' : 'Error');
+				} catch (error) {
+					updateStatus('db', false, 'Offline');
+				}
+
+				// Check storage (simulate)
+				updateStatus('storage', true, 'Available');
+			}
+
+			function updateStatus(service, success, text) {
+				const statusElement = document.getElementById(statuses[service].element);
+				const textElement = document.getElementById(statuses[service].text);
+
+				statusElement.className = `status-indicator ${success ? 'status-success' : 'status-error'}`;
+				textElement.textContent = text;
+			}
+
+			// Load cameras
+			async function loadCameras() {
+				if (!apiKey) {
+					document.getElementById('cameraSection').innerHTML = '<div class="loading">Enter API key above to view camera feeds</div>';
+					return;
+				}
+
+				document.getElementById('cameraSection').innerHTML = '<div class="loading">Loading cameras...</div>';
+
+				try {
+					const response = await fetch('/protect/cameras', {
+						headers: {
+							'x-api-key': apiKey,
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					}
+
+					const data = await response.json();
+					await displayCameras(data.cameras || []);
+				} catch (error) {
+					document.getElementById('cameraSection').innerHTML = `<div class="error">Error loading cameras: ${error.message}</div>`;
+				}
+			}
+
+			async function displayCameras(cameras) {
+				if (cameras.length === 0) {
+					document.getElementById('cameraSection').innerHTML = `
                     <div class="error">
                         <h3>No Cameras Found</h3>
                         <p><strong>Current Status:</strong> The UniFi Protect API is responding correctly, but no cameras are configured in the system.</p>
@@ -707,53 +710,53 @@
                         <p><em>Check the console logs for detailed API response information.</em></p>
                     </div>
                 `;
-                return;
-            }
+					return;
+				}
 
-            const cameraGrid = document.createElement('div');
-            cameraGrid.className = 'camera-grid';
+				const cameraGrid = document.createElement('div');
+				cameraGrid.className = 'camera-grid';
 
-            // Process each camera and fetch its streams
-            for (const camera of cameras) {
-                const cameraCard = document.createElement('div');
-                cameraCard.className = 'camera-card';
+				// Process each camera and fetch its streams
+				for (const camera of cameras) {
+					const cameraCard = document.createElement('div');
+					cameraCard.className = 'camera-card';
 
-                const statusClass = camera.state === 'CONNECTED' ? 'status-success' : 'status-error';
-                const statusText = camera.state === 'CONNECTED' ? 'Online' : 'Offline';
+					const statusClass = camera.state === 'CONNECTED' ? 'status-success' : 'status-error';
+					const statusText = camera.state === 'CONNECTED' ? 'Online' : 'Offline';
 
-                // Fetch streams for this camera
-                let streamsInfo = 'Loading streams...';
-                let streams = [];
-                try {
-                    const streamsResponse = await fetch(`/protect/cameras/${camera.id}/streams`, {
-                        headers: {
-                            'x-api-key': apiKey
-                        }
-                    });
+					// Fetch streams for this camera
+					let streamsInfo = 'Loading streams...';
+					let streams = [];
+					try {
+						const streamsResponse = await fetch(`/protect/cameras/${camera.id}/streams`, {
+							headers: {
+								'x-api-key': apiKey,
+							},
+						});
 
-                    if (streamsResponse.ok) {
-                        const streamsData = await streamsResponse.json();
-                        streams = streamsData.streams || [];
-                        if (streams.length > 0) {
-                            const enabledStreams = streams.filter(s => s.enabled);
-                            streamsInfo = `Streams: ${enabledStreams.length}/${streams.length} enabled`;
-                        } else {
-                            streamsInfo = 'No streams available';
-                        }
-                    } else {
-                        streamsInfo = 'Streams: Error loading';
-                    }
-                } catch (error) {
-                    streamsInfo = 'Streams: Error loading';
-                }
+						if (streamsResponse.ok) {
+							const streamsData = await streamsResponse.json();
+							streams = streamsData.streams || [];
+							if (streams.length > 0) {
+								const enabledStreams = streams.filter((s) => s.enabled);
+								streamsInfo = `Streams: ${enabledStreams.length}/${streams.length} enabled`;
+							} else {
+								streamsInfo = 'No streams available';
+							}
+						} else {
+							streamsInfo = 'Streams: Error loading';
+						}
+					} catch (error) {
+						streamsInfo = 'Streams: Error loading';
+					}
 
-                // Create camera feed display
-                let videoElement = '';
-                if (streams && streams.length > 0) {
-                    const enabledStreams = streams.filter(s => s.enabled);
-                    if (enabledStreams.length > 0) {
-                        // Show live camera feed using snapshots
-                        videoElement = `
+					// Create camera feed display
+					let videoElement = '';
+					if (streams && streams.length > 0) {
+						const enabledStreams = streams.filter((s) => s.enabled);
+						if (enabledStreams.length > 0) {
+							// Show live camera feed using snapshots
+							videoElement = `
                             <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: #000;">
                                 <img id="camera-feed-${camera.id}"
                                      src="/protect/cameras/${camera.id}/feed?refresh=true"
@@ -779,9 +782,9 @@
                                 </div>
                             </div>
                         `;
-                    } else {
-                        // No enabled streams
-                        videoElement = `
+						} else {
+							// No enabled streams
+							videoElement = `
                             <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                                 <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
                                 <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">${camera.name || 'Camera'}</div>
@@ -794,10 +797,10 @@
                                 </div>
                             </div>
                         `;
-                    }
-                } else {
-                    // No streams at all
-                    videoElement = `
+						}
+					} else {
+						// No streams at all
+						videoElement = `
                         <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                             <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
                             <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">${camera.name || 'Camera'}</div>
@@ -810,9 +813,9 @@
                             </div>
                         </div>
                     `;
-                }
+					}
 
-                cameraCard.innerHTML = `
+					cameraCard.innerHTML = `
                     <div class="camera-feed">
                         ${videoElement || `<div style="padding: 50px; text-align: center; background: #f0f0f0; color: #666;">No video stream available</div>`}
                         <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">${streamsInfo}</div>
@@ -829,111 +832,107 @@
                     </div>
                 `;
 
-                cameraGrid.appendChild(cameraCard);
-            }
+					cameraGrid.appendChild(cameraCard);
+				}
 
-            document.getElementById('cameraSection').innerHTML = '';
-            document.getElementById('cameraSection').appendChild(cameraGrid);
+				document.getElementById('cameraSection').innerHTML = '';
+				document.getElementById('cameraSection').appendChild(cameraGrid);
 
-            // Start camera refresh after a short delay to let images load
-            setTimeout(() => {
-                startCameraRefresh();
-            }, 1000);
-        }
+				// Start camera refresh after a short delay to let images load
+				setTimeout(() => {
+					startCameraRefresh();
+				}, 1000);
+			}
 
-        // Refresh camera feeds periodically
-        function refreshCameraFeeds() {
-            const cameraFeeds = document.querySelectorAll('img[id^="camera-feed-"]');
-            cameraFeeds.forEach(img => {
-                const currentSrc = img.src;
-                // Add timestamp to force refresh
-                const separator = currentSrc.includes('?') ? '&' : '?';
-                img.src = currentSrc + separator + 't=' + Date.now();
-            });
-        }
+			// Refresh camera feeds periodically
+			function refreshCameraFeeds() {
+				const cameraFeeds = document.querySelectorAll('img[id^="camera-feed-"]');
+				cameraFeeds.forEach((img) => {
+					const currentSrc = img.src;
+					// Add timestamp to force refresh
+					const separator = currentSrc.includes('?') ? '&' : '?';
+					img.src = currentSrc + separator + 't=' + Date.now();
+				});
+			}
 
-        // Set up periodic refresh for camera feeds (every 5 seconds)
-        let cameraRefreshInterval;
-        function startCameraRefresh() {
-            if (cameraRefreshInterval) {
-                clearInterval(cameraRefreshInterval);
-            }
-            cameraRefreshInterval = setInterval(refreshCameraFeeds, 5000);
-        }
+			// Set up periodic refresh for camera feeds (every 5 seconds)
+			let cameraRefreshInterval;
+			function startCameraRefresh() {
+				if (cameraRefreshInterval) {
+					clearInterval(cameraRefreshInterval);
+				}
+				cameraRefreshInterval = setInterval(refreshCameraFeeds, 5000);
+			}
 
-        function stopCameraRefresh() {
-            if (cameraRefreshInterval) {
-                clearInterval(cameraRefreshInterval);
-                cameraRefreshInterval = null;
-            }
-        }
+			function stopCameraRefresh() {
+				if (cameraRefreshInterval) {
+					clearInterval(cameraRefreshInterval);
+					cameraRefreshInterval = null;
+				}
+			}
 
-        // Load webhook events
-        async function loadWebhookEvents() {
-            if (!apiKey) {
-                document.getElementById('webhookSection').innerHTML =
-                    '<div class="loading">Enter API key above to view webhook events</div>';
-                return;
-            }
+			// Load webhook events
+			async function loadWebhookEvents() {
+				if (!apiKey) {
+					document.getElementById('webhookSection').innerHTML = '<div class="loading">Enter API key above to view webhook events</div>';
+					return;
+				}
 
-            document.getElementById('webhookSection').innerHTML =
-                '<div class="loading">Loading webhook events...</div>';
+				document.getElementById('webhookSection').innerHTML = '<div class="loading">Loading webhook events...</div>';
 
-            try {
-                const response = await fetch('/webhook/events', {
-                    headers: {
-                        'x-api-key': apiKey
-                    }
-                });
+				try {
+					const response = await fetch('/webhook/events', {
+						headers: {
+							'x-api-key': apiKey,
+						},
+					});
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
+					if (!response.ok) {
+						throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+					}
 
-                const data = await response.json();
-                await displayWebhookEvents(data.events || []);
-            } catch (error) {
-                document.getElementById('webhookSection').innerHTML =
-                    `<div class="error">Error loading webhook events: ${error.message}</div>`;
-            }
-        }
+					const data = await response.json();
+					await displayWebhookEvents(data.events || []);
+				} catch (error) {
+					document.getElementById('webhookSection').innerHTML = `<div class="error">Error loading webhook events: ${error.message}</div>`;
+				}
+			}
 
-        async function displayWebhookEvents(events) {
-            if (events.length === 0) {
-                document.getElementById('webhookSection').innerHTML =
-                    '<div class="loading">No webhook events found</div>';
-                return;
-            }
+			async function displayWebhookEvents(events) {
+				if (events.length === 0) {
+					document.getElementById('webhookSection').innerHTML = '<div class="loading">No webhook events found</div>';
+					return;
+				}
 
-            const webhookContainer = document.createElement('div');
-            webhookContainer.innerHTML = `
+				const webhookContainer = document.createElement('div');
+				webhookContainer.innerHTML = `
                 <div class="webhook-refresh">
                     <button onclick="loadWebhookEvents()" class="btn">Refresh Events</button>
                 </div>
             `;
 
-            const webhookEvents = document.createElement('div');
-            webhookEvents.className = 'webhook-events';
+				const webhookEvents = document.createElement('div');
+				webhookEvents.className = 'webhook-events';
 
-            events.forEach(event => {
-                const eventElement = document.createElement('div');
-                eventElement.className = 'webhook-event';
+				events.forEach((event) => {
+					const eventElement = document.createElement('div');
+					eventElement.className = 'webhook-event';
 
-                const timestamp = new Date(event.timestamp).toLocaleString();
-                const eventType = event.eventType || event.type || 'unknown';
-                const cameraId = event.cameraId || event.camera || 'unknown';
+					const timestamp = new Date(event.timestamp).toLocaleString();
+					const eventType = event.eventType || event.type || 'unknown';
+					const cameraId = event.cameraId || event.camera || 'unknown';
 
-                let thumbnailHtml = '';
-                if (event.thumbnail_r2_key) {
-                    thumbnailHtml = `
+					let thumbnailHtml = '';
+					if (event.thumbnail_r2_key) {
+						thumbnailHtml = `
                         <img src="/fetch/${event.thumbnail_r2_key}"
                              alt="Event thumbnail"
                              class="webhook-thumbnail"
                              onerror="this.style.display='none'">
                     `;
-                }
+					}
 
-                eventElement.innerHTML = `
+					eventElement.innerHTML = `
                     <div class="webhook-header">
                         <span class="webhook-event-type">${eventType.toUpperCase()}</span>
                         <span class="webhook-timestamp">${timestamp}</span>
@@ -959,27 +958,27 @@
                     </div>
                 `;
 
-                webhookEvents.appendChild(eventElement);
-            });
+					webhookEvents.appendChild(eventElement);
+				});
 
-            webhookContainer.appendChild(webhookEvents);
-            document.getElementById('webhookSection').innerHTML = '';
-            document.getElementById('webhookSection').appendChild(webhookContainer);
-        }
+				webhookContainer.appendChild(webhookEvents);
+				document.getElementById('webhookSection').innerHTML = '';
+				document.getElementById('webhookSection').appendChild(webhookContainer);
+			}
 
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-    </script>
-</body>
+			// Smooth scrolling for navigation links
+			document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+				anchor.addEventListener('click', function (e) {
+					e.preventDefault();
+					const target = document.querySelector(this.getAttribute('href'));
+					if (target) {
+						target.scrollIntoView({
+							behavior: 'smooth',
+							block: 'start',
+						});
+					}
+				});
+			});
+		</script>
+	</body>
 </html>

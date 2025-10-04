@@ -1,6 +1,32 @@
-import { env, createExecutionContext, waitOnExecutionContext, SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
 import worker from '../src/index';
+import type { Env } from '../src/types.js';
+
+// Mock cloudflare:test functions
+const createExecutionContext = () =>
+	({
+		waitUntil: (promise: Promise<any>) => promise,
+		passThroughOnException: () => {},
+		props: {},
+	}) as any;
+
+const waitOnExecutionContext = async (ctx: any) => {
+	// Mock implementation - in real tests this would wait for ctx.waitUntil promises
+	return Promise.resolve();
+};
+
+const env: Env = {
+	DB: {} as any,
+	BUCKET: {} as any,
+	AI: {} as any,
+	EVENTS_Q: {} as any,
+	ASSETS: {} as any,
+	PROTECT_API: 'https://test.example.com',
+	PROTECT_API_KEY: 'test-key',
+	UNIFI_USERNAME: 'test-user',
+	UNIFI_PASSWORD: 'test-pass',
+	WORKER_API_KEY: 'test-worker-key',
+};
 
 // For now, you'll need to do something like this to get a correctly-typed
 // `Request` to pass to `worker.fetch()`.
@@ -980,7 +1006,7 @@ describe('Hello World worker', () => {
 	});
 
 	it('responds with Hello World! (integration style)', async () => {
-		const response = await SELF.fetch('https://example.com');
+		const response = await worker.fetch(new Request('https://example.com'), env, createExecutionContext());
 		expect(await response.text()).toMatchInlineSnapshot(`
 			"<!DOCTYPE html>
 			<html lang="en">

@@ -28,10 +28,12 @@ src/
 ## Modules
 
 ### Core Types (`types.ts`)
+
 - Defines all TypeScript interfaces and types used throughout the application
 - Includes `Env`, `SecuritySweepResult`, `Observation`, `RuleResult`, etc.
 
 ### Home Assistant Integration (`integrations/homeassistant.ts`)
+
 - `HomeAssistantClient` class for HA API interactions
 - Methods for getting states, setting input booleans, and vision analysis
 - Utility function `onOff()` for parsing HA state values
@@ -39,36 +41,43 @@ src/
 ### Services
 
 #### Camera Service (`services/camera.ts`)
+
 - `CameraService` class for camera operations
 - Methods for getting camera lists and fetching/storing snapshots
 - Handles Protect API integration and R2 storage
 
 #### Vision Analysis (`services/vision.ts`)
+
 - `VisionAnalysisService` class for image analysis
 - Supports both Home Assistant vision and Workers AI
 - Automatic fallback between services
 
 #### Rules Engine (`services/rules.ts`)
+
 - `RulesEngine` class for security rule evaluation
 - Methods for rule evaluation, summarization, and boolean computation
 - Configurable security rules (car + door, person at night, etc.)
 
 #### Storage (`services/storage.ts`)
+
 - `StorageService` class for database operations
 - Methods for saving patrol runs and observations
 - Handles D1 database interactions
 
 #### Notifications (`services/notifications.ts`)
+
 - `NotificationService` class for alerting
 - Currently supports ntfy notifications
 - Extensible for other notification providers
 
 #### Security Sweep (`services/security-sweep.ts`)
+
 - `SecuritySweepService` class that orchestrates the entire security sweep process
 - Coordinates all other services
 - Main business logic for the security patrol system
 
 ### Utilities (`utils/response.ts`)
+
 - `json()` helper function for JSON responses
 - Common HTTP response utilities
 
@@ -93,8 +102,8 @@ const securitySweep = new SecuritySweepService(env);
 
 // Run security sweep
 const result = await securitySweep.runSecuritySweep({
-  trigger: "api",
-  focusCamera: "camera1"
+	trigger: 'api',
+	focusCamera: 'camera1',
 });
 ```
 

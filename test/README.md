@@ -17,6 +17,7 @@ The test suite can run against two environments:
 ## Available Test Commands
 
 ### All Tests
+
 ```bash
 # Test against deployed worker (default)
 pnpm test:deployed
@@ -29,6 +30,7 @@ TEST_ENV=local pnpm test:run
 ```
 
 ### Specific Test Suites
+
 ```bash
 # Webhook tests only
 pnpm test:webhook:deployed
@@ -40,6 +42,7 @@ pnpm test:api:local
 ```
 
 ### Interactive Testing
+
 ```bash
 # Watch mode for development
 pnpm test:watch
@@ -88,6 +91,7 @@ The tests use realistic test data:
 ### Prerequisites
 
 1. **For Local Testing**:
+
    ```bash
    # Start the development server
    pnpm dev

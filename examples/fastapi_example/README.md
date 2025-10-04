@@ -86,9 +86,9 @@ result = await send_custom_log(
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `WORKER_URL` | Your Cloudflare Workers URL | Yes |
+| Variable     | Description                 | Required |
+| ------------ | --------------------------- | -------- |
+| `WORKER_URL` | Your Cloudflare Workers URL | Yes      |
 
 ## Features
 
@@ -103,25 +103,25 @@ result = await send_custom_log(
 
 ### `setup_cloudflare_logging()`
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `batch_size` | int | 10 | Number of logs to batch before sending |
-| `log_level` | int | logging.INFO | Minimum log level to capture |
-| `include_console` | bool | True | Whether to also log to console |
+| Parameter         | Type | Default      | Description                            |
+| ----------------- | ---- | ------------ | -------------------------------------- |
+| `batch_size`      | int  | 10           | Number of logs to batch before sending |
+| `log_level`       | int  | logging.INFO | Minimum log level to capture           |
+| `include_console` | bool | True         | Whether to also log to console         |
 
 ### `send_custom_log()`
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `level` | str | Yes | Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
-| `message` | str | Yes | Log message |
-| `logger_name` | str | No | Logger name (default: "custom") |
-| `extra_data` | dict | No | Additional structured data |
-| `module` | str | No | Module name |
-| `function_name` | str | No | Function name |
-| `line_number` | int | No | Line number |
-| `request_id` | str | No | Request ID for correlation |
-| `correlation_id` | str | No | Correlation ID for tracing |
+| Parameter        | Type | Required | Description                                       |
+| ---------------- | ---- | -------- | ------------------------------------------------- |
+| `level`          | str  | Yes      | Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL) |
+| `message`        | str  | Yes      | Log message                                       |
+| `logger_name`    | str  | No       | Logger name (default: "custom")                   |
+| `extra_data`     | dict | No       | Additional structured data                        |
+| `module`         | str  | No       | Module name                                       |
+| `function_name`  | str  | No       | Function name                                     |
+| `line_number`    | int  | No       | Line number                                       |
+| `request_id`     | str  | No       | Request ID for correlation                        |
+| `correlation_id` | str  | No       | Correlation ID for tracing                        |
 
 ## Error Handling
 

@@ -1,15 +1,18 @@
 # UniFi Protect API Worker - Agent Documentation
 
 ## Overview
+
 This Cloudflare Worker provides a backend API for UniFi Protect integration with Home Assistant. It acts as a bridge between external clients and the UniFi Protect system, handling authentication, camera management, and security sweep operations.
 
 ## Architecture
 
 ### Authentication Flow
+
 - **Worker → UniFi Protect API**: Uses `PROTECT_API_KEY` with `x-api-key` header
 - **Clients → Worker API**: Uses `WORKER_API_KEY` with `x-api-key` header
 
 ### Key Services
+
 - `ProtectApiService`: Handles UniFi Protect API communication
 - `SecuritySweepService`: Manages security patrol operations
 - `HomeAssistantClient`: Integrates with Home Assistant
@@ -22,23 +25,27 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 ## API Endpoints
 
 ### Public Endpoints
+
 - `GET /` - Serves the main dashboard
 - `GET /favicon.ico` - Returns 204 No Content
 - `GET /openapi.json` - API documentation
 
 ### Protected Endpoints (require WORKER_API_KEY)
+
 - `GET /protect/cameras` - List all cameras
 - `GET /protect/cameras/{id}` - Get specific camera
 - `GET /protect/cameras/{id}/streams` - Get camera streams
 - `POST /protect/login` - Login to UniFi Protect
 
 ### Agent Endpoints
+
 - `GET /agent/security_sweep` - Trigger security sweep
 - `POST /webhook` - Webhook for events
 
 ## Environment Variables
 
 ### Required
+
 - `PROTECT_API`: UniFi Protect API base URL (e.g., `https://unifi-cameras.hacolby.app`)
 - `PROTECT_API_KEY`: API key for UniFi Protect authentication
 - `WORKER_API_KEY`: API key for client authentication with this worker
@@ -46,6 +53,7 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 - `UNIFI_PASSWORD`: UniFi Protect password
 
 ### Optional
+
 - `HA_BASE_URL`: Home Assistant base URL
 - `HA_TOKEN`: Home Assistant long-lived token
 - `HA_VISION_SERVICE`: Vision analysis service
@@ -56,6 +64,7 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 ## Database Schema (D1)
 
 ### Tables
+
 - `patrol_runs`: Security sweep execution records
 - `observations`: Individual rule evaluation results
 - `camera_configs`: Camera-specific configurations
@@ -63,14 +72,17 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 ## Common Issues & Solutions
 
 ### 1. API Authentication Errors
+
 - **401 Unauthorized**: Check `WORKER_API_KEY` for client requests
 - **422 Missing x-api-key**: Ensure `PROTECT_API_KEY` is set for UniFi Protect calls
 
 ### 2. UniFi Protect API Issues
+
 - **404 Not Found**: Verify API endpoint paths (use `/protect/login` not `/api/auth/login`)
 - **500 Internal Server Error**: Check if UniFi Protect service is running
 
 ### 3. Environment Variable Issues
+
 - Always verify `.dev.vars` file contains all required variables
 - Run `wrangler types` after changing environment variables
 
@@ -80,11 +92,32 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 2. **Start Development Server**: `pnpm dev`
 3. **Test Endpoints**: Use curl or the web interface
 4. **Update Types**: `pnpm cf-typegen` after configuration changes
-5. **Deploy**: `pnpm deploy` (automatically runs remote migrations first)
+5. **Run Checks**: `pnpm check` (REQUIRED before committing - validates types and formatting)
+6. **Deploy**: `pnpm deploy` (automatically runs remote migrations first)
+
+### Pre-Commit Checklist
+
+**ALWAYS run these checks before committing code:**
+
+```bash
+pnpm check          # Run all checks (types + formatting)
+pnpm check:types    # TypeScript type checking only
+pnpm check:format   # Code formatting validation only
+pnpm format         # Auto-fix formatting issues
+```
+
+These checks replicate VSCode's Problems tab and will catch:
+
+- TypeScript errors in src/ and test/ directories
+- Type safety issues
+- Code formatting inconsistencies
+
+**Do not commit code with type errors!** Fix all issues reported by `pnpm check` first.
 
 ## Testing
 
 ### Manual Testing
+
 ```bash
 # Test cameras endpoint
 curl -H "x-api-key: 6502241638" http://localhost:8787/protect/cameras
@@ -97,18 +130,31 @@ curl -X POST http://localhost:8787/protect/login
 ```
 
 ### Available Scripts
+
 ```bash
+# Development
 pnpm dev              # Start development server
+pnpm check            # Run type and format checks (REQUIRED before commit)
+pnpm check:types      # TypeScript type checking
+pnpm check:format     # Code formatting validation
+pnpm format           # Auto-fix formatting issues
+
+# Database
 pnpm migrate:local    # Apply migrations to local database
 pnpm migrate:remote   # Apply migrations to remote database
+
+# Deployment
 pnpm deploy           # Deploy to production (runs migrations first)
 pnpm cf-typegen       # Generate TypeScript types
+
+# Testing
 pnpm test             # Run tests
 pnpm test:run         # Run tests once
 pnpm test:watch       # Run tests in watch mode
 ```
 
 ### Frontend Testing
+
 - Navigate to `http://localhost:8787`
 - Enter Worker API key: `6502241638`
 - Use health check and camera sections
@@ -122,6 +168,7 @@ pnpm test:watch       # Run tests in watch mode
 - **Type Safety**: Use `wrangler types` to generate current type definitions
 
 ## File Structure
+
 ```
 src/
 ├── index.ts                 # Main worker entry point

@@ -1,988 +1,2057 @@
 {
-  "openapi": "3.0.0",
-  "info": {
-    "title": "UniFi Protect API",
-    "description": "Cloudflare Worker backend for UniFi Protect integration with Home Assistant, featuring security sweeps, patrol configurations, and camera management",
-    "version": "1.0.0",
-    "contact": {
-      "name": "UniFi Protect API",
-      "url": "https://github.com/jmbish04/hassio-unifi-protect-backend"
-    }
-  },
-  "servers": [
-    {
-      "url": "https://protect.hacolby.app",
-      "description": "Production server"
-    },
-    {
-      "url": "https://unifi-protect-api.{username}.workers.dev",
-      "description": "Development server"
-    }
-  ],
-  "paths": {
-    "/webhook": {
-      "post": {
-        "summary": "Webhook endpoint for events",
-        "description": "Receives webhook events from Home Assistant or UniFi Protect",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WebhookEvent"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Event processed successfully",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "ok"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - invalid JSON"
-          }
-        }
-      }
-    },
-    "/agent/security_sweep": {
-      "get": {
-        "summary": "Trigger security sweep",
-        "description": "API-triggered on-demand security sweep",
-        "parameters": [
-          {
-            "name": "camera",
-            "in": "query",
-            "description": "Focus on specific camera",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Security sweep completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecuritySweepResult"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "summary": "Trigger security sweep (POST)",
-        "description": "API-triggered on-demand security sweep via POST",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "camera": {
-                    "type": "string",
-                    "description": "Focus on specific camera"
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Security sweep completed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SecuritySweepResult"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/protect/login": {
-      "post": {
-        "summary": "Login to UniFi Protect",
-        "description": "Authenticate with UniFi Protect and establish session",
-        "responses": {
-          "200": {
-            "description": "Login successful",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProtectLoginResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Login failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/protect/cameras": {
-      "get": {
-        "summary": "Get all cameras",
-        "description": "Retrieve list of all UniFi Protect cameras",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of cameras",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProtectCamerasResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to fetch cameras",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/protect/cameras/{camera_id}": {
-      "get": {
-        "summary": "Get specific camera",
-        "description": "Retrieve details for a specific camera by ID",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "camera_id",
-            "in": "path",
-            "required": true,
-            "description": "Camera ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Camera details",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProtectCameraResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Camera not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to fetch camera",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/protect/cameras/{camera_id}/streams": {
-      "get": {
-        "summary": "Get camera streams",
-        "description": "Retrieve RTSP stream URLs for a specific camera",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "camera_id",
-            "in": "path",
-            "required": true,
-            "description": "Camera ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Camera streams",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProtectStreamsResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Camera not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to fetch camera streams",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/protect/cameras/{camera_id}/snapshot": {
-      "get": {
-        "summary": "Get camera snapshot",
-        "description": "Retrieve a single snapshot image from a specific camera",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "camera_id",
-            "in": "path",
-            "required": true,
-            "description": "Camera ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Camera snapshot image",
-            "content": {
-              "image/jpeg": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            },
-            "headers": {
-              "Cache-Control": {
-                "description": "Cache control header",
-                "schema": {
-                  "type": "string",
-                  "example": "no-cache"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Camera not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to fetch camera snapshot",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/protect/cameras/{camera_id}/feed": {
-      "get": {
-        "summary": "Get camera feed",
-        "description": "Retrieve live camera feed as MJPEG stream or single snapshot",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "camera_id",
-            "in": "path",
-            "required": true,
-            "description": "Camera ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "refresh",
-            "in": "query",
-            "required": false,
-            "description": "Enable MJPEG streaming (true) or single snapshot (false)",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Camera feed - MJPEG stream or single snapshot",
-            "content": {
-              "image/jpeg": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              },
-              "multipart/x-mixed-replace": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            },
-            "headers": {
-              "Cache-Control": {
-                "description": "Cache control header",
-                "schema": {
-                  "type": "string",
-                  "example": "no-cache"
-                }
-              },
-              "Connection": {
-                "description": "Connection header for MJPEG streams",
-                "schema": {
-                  "type": "string",
-                  "example": "close"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Camera not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to fetch camera feed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/logs": {
-      "post": {
-        "summary": "Store log entries",
-        "description": "Store single or multiple log entries in D1 database with 30-day TTL. No authentication required for writing logs.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/LogEntryRequest"
-                  },
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/components/schemas/LogEntryRequest"
-                    }
-                  }
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Log entry stored successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogEntriesResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request - invalid JSON or missing required fields",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to store log entry",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "summary": "Retrieve log entries",
-        "description": "Query log entries with optional filtering. Authentication required.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "description": "Number of entries to return",
-            "schema": {
-              "type": "integer",
-              "default": 100,
-              "minimum": 1,
-              "maximum": 1000
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "description": "Number of entries to skip",
-            "schema": {
-              "type": "integer",
-              "default": 0,
-              "minimum": 0
-            }
-          },
-          {
-            "name": "level",
-            "in": "query",
-            "required": false,
-            "description": "Filter by log level",
-            "schema": {
-              "type": "string",
-              "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-            }
-          },
-          {
-            "name": "logger_name",
-            "in": "query",
-            "required": false,
-            "description": "Filter by logger name",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "start_date",
-            "in": "query",
-            "required": false,
-            "description": "Filter by start date (ISO format)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "end_date",
-            "in": "query",
-            "required": false,
-            "description": "Filter by end date (ISO format)",
-            "schema": {
-              "type": "string",
-              "format": "date-time"
-            }
-          },
-          {
-            "name": "request_id",
-            "in": "query",
-            "required": false,
-            "description": "Filter by request ID",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "correlation_id",
-            "in": "query",
-            "required": false,
-            "description": "Filter by correlation ID",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Log entries retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogEntriesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to retrieve log entries",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/logs/stats": {
-      "get": {
-        "summary": "Get log statistics",
-        "description": "Retrieve statistics about stored log entries. Authentication required.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Log statistics retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogStatisticsResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to retrieve log statistics",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/logs/cleanup": {
-      "post": {
-        "summary": "Cleanup expired logs",
-        "description": "Manually trigger cleanup of expired log entries (older than 30 days). Authentication required.",
-        "security": [
-          {
-            "ApiKeyAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Log cleanup completed successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LogEntriesResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - invalid or missing API key",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Failed to cleanup expired logs",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "ApiKeyAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "x-api-key",
-        "description": "API key for authentication"
-      }
-    },
-    "schemas": {
-      "WebhookEvent": {
-        "type": "object",
-        "required": ["type"],
-        "properties": {
-          "type": {
-            "type": "string",
-            "description": "Event type"
-          },
-          "camera": {
-            "type": "string",
-            "description": "Camera identifier"
-          }
-        },
-        "additionalProperties": true
-      },
-      "SecuritySweepResult": {
-        "type": "object",
-        "properties": {
-          "runId": {
-            "type": "string"
-          },
-          "ts": {
-            "type": "number"
-          },
-          "trigger": {
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "observations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Observation"
-            }
-          }
-        }
-      },
-      "Observation": {
-        "type": "object",
-        "properties": {
-          "camera": {
-            "type": "string"
-          },
-          "rule": {
-            "type": "string"
-          },
-          "result": {
-            "type": "string",
-            "enum": ["pass", "warn", "fail"]
-          }
-        }
-      },
-      "ProtectLoginResponse": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string"
-          }
-        }
-      },
-      "ProtectCamerasResponse": {
-        "type": "object",
-        "properties": {
-          "cameras": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProtectCamera"
-            }
-          }
-        }
-      },
-      "ProtectCamera": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "host": {
-            "type": "string"
-          },
-          "connectionHost": {
-            "type": "string"
-          },
-          "lastSeen": {
-            "type": "string"
-          },
-          "isPoorNetwork": {
-            "type": "boolean"
-          },
-          "lastRing": {
-            "type": "string"
-          },
-          "videoCodec": {
-            "type": "string"
-          },
-          "wiredConnectionState": {
-            "type": "object"
-          },
-          "wifiConnectionState": {
-            "type": "object"
-          },
-          "talkbackSettings": {
-            "type": "object"
-          },
-          "speakerSettings": {
-            "type": "object"
-          },
-          "smartDetectSettings": {
-            "type": "object",
-            "properties": {
-              "objectTypes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "autoTrackingObjectTypes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "autoTrackingWithZoom": {
-                "type": "boolean"
-              },
-              "audioTypes": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "detectionRanges": {
-                "type": "array"
-              }
-            }
-          },
-          "motionZones": {
-            "type": "array"
-          },
-          "smartDetectZones": {
-            "type": "array"
-          },
-          "name": {
-            "type": "string"
-          },
-          "mac": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "state": {
-            "type": "string"
-          },
-          "isRecording": {
-            "type": "boolean"
-          },
-          "channels": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProtectChannel"
-            }
-          }
-        }
-      },
-      "ProtectChannel": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "isRtspEnabled": {
-            "type": "boolean"
-          },
-          "rtspAlias": {
-            "type": "string"
-          }
-        }
-      },
-      "ProtectCameraResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ProtectCamera"
-          }
-        ]
-      },
-      "ProtectStreamsResponse": {
-        "type": "object",
-        "properties": {
-          "streams": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProtectStream"
-            }
-          }
-        }
-      },
-      "ProtectStream": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "enabled": {
-            "type": "boolean"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "properties": {
-          "error": {
-            "type": "string"
-          }
-        }
-      }
-    }
-  }
+	"openapi": "3.0.0",
+	"info": {
+		"title": "UniFi Protect API",
+		"description": "Cloudflare Worker backend for UniFi Protect integration with Home Assistant, featuring security sweeps, patrol configurations, and camera management",
+		"version": "1.0.0",
+		"contact": {
+			"name": "UniFi Protect API",
+			"url": "https://github.com/jmbish04/hassio-unifi-protect-backend"
+		}
+	},
+	"servers": [
+		{
+			"url": "https://protect.hacolby.app",
+			"description": "Production server"
+		},
+		{
+			"url": "https://unifi-protect-api.{username}.workers.dev",
+			"description": "Development server"
+		}
+	],
+	"paths": {
+		"/webhook": {
+			"post": {
+				"summary": "Webhook endpoint for events",
+				"description": "Receives webhook events from Home Assistant or UniFi Protect",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"$ref": "#/components/schemas/WebhookEvent"
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Event processed successfully",
+						"content": {
+							"text/plain": {
+								"schema": {
+									"type": "string",
+									"example": "ok"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request - invalid JSON"
+					}
+				}
+			}
+		},
+		"/agent/security_sweep": {
+			"get": {
+				"summary": "Trigger security sweep",
+				"description": "API-triggered on-demand security sweep",
+				"parameters": [
+					{
+						"name": "camera",
+						"in": "query",
+						"description": "Focus on specific camera",
+						"required": false,
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Security sweep completed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SecuritySweepResult"
+								}
+							}
+						}
+					}
+				}
+			},
+			"post": {
+				"summary": "Trigger security sweep (POST)",
+				"description": "API-triggered on-demand security sweep via POST",
+				"requestBody": {
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"camera": {
+										"type": "string",
+										"description": "Focus on specific camera"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Security sweep completed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/SecuritySweepResult"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/protect/login": {
+			"post": {
+				"summary": "Login to UniFi Protect",
+				"description": "Authenticate with UniFi Protect and establish session",
+				"responses": {
+					"200": {
+						"description": "Login successful",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ProtectLoginResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Login failed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/protect/cameras": {
+			"get": {
+				"summary": "Get all cameras",
+				"description": "Retrieve list of all UniFi Protect cameras",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "List of cameras",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ProtectCamerasResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to fetch cameras",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/protect/cameras/{camera_id}": {
+			"get": {
+				"summary": "Get specific camera",
+				"description": "Retrieve details for a specific camera by ID",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Camera details",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ProtectCameraResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Camera not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to fetch camera",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/protect/cameras/{camera_id}/streams": {
+			"get": {
+				"summary": "Get camera streams",
+				"description": "Retrieve RTSP stream URLs and HLS proxy information for a specific camera",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Camera streams with HLS proxy information",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/CameraWithStreams",
+									"example": {
+										"camera_id": "cam_driveway",
+										"name": "Driveway",
+										"streams": {
+											"vendor_rtsp_url": "rtsp://unifi.local:7447/cam_driveway",
+											"proxy_hls_url": "https://example.com/proxy/hls/cam_driveway/master.m3u8",
+											"proxy_status": "running"
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Camera not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"502": {
+						"description": "Bad Gateway - failed to fetch vendor data",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to fetch camera streams",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/protect/cameras/{camera_id}/snapshot": {
+			"get": {
+				"summary": "Get camera snapshot",
+				"description": "Retrieve a single snapshot image from a specific camera",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Camera snapshot image",
+						"content": {
+							"image/jpeg": {
+								"schema": {
+									"type": "string",
+									"format": "binary"
+								}
+							}
+						},
+						"headers": {
+							"Cache-Control": {
+								"description": "Cache control header",
+								"schema": {
+									"type": "string",
+									"example": "no-cache"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Camera not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to fetch camera snapshot",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/protect/cameras/{camera_id}/feed": {
+			"get": {
+				"summary": "Get camera feed",
+				"description": "Retrieve live camera feed as MJPEG stream or single snapshot",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "refresh",
+						"in": "query",
+						"required": false,
+						"description": "Enable MJPEG streaming (true) or single snapshot (false)",
+						"schema": {
+							"type": "boolean",
+							"default": false
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Camera feed - MJPEG stream or single snapshot",
+						"content": {
+							"image/jpeg": {
+								"schema": {
+									"type": "string",
+									"format": "binary"
+								}
+							},
+							"multipart/x-mixed-replace": {
+								"schema": {
+									"type": "string",
+									"format": "binary"
+								}
+							}
+						},
+						"headers": {
+							"Cache-Control": {
+								"description": "Cache control header",
+								"schema": {
+									"type": "string",
+									"example": "no-cache"
+								}
+							},
+							"Connection": {
+								"description": "Connection header for MJPEG streams",
+								"schema": {
+									"type": "string",
+									"example": "close"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Camera not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to fetch camera feed",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/logs": {
+			"post": {
+				"summary": "Store log entries",
+				"description": "Store single or multiple log entries in D1 database with 30-day TTL. No authentication required for writing logs.",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"oneOf": [
+									{
+										"$ref": "#/components/schemas/LogEntryRequest"
+									},
+									{
+										"type": "array",
+										"items": {
+											"$ref": "#/components/schemas/LogEntryRequest"
+										}
+									}
+								]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Log entry stored successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/LogEntriesResponse"
+								}
+							}
+						}
+					},
+					"400": {
+						"description": "Bad request - invalid JSON or missing required fields",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to store log entry",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"summary": "Retrieve log entries",
+				"description": "Query log entries with optional filtering. Authentication required.",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"required": false,
+						"description": "Number of entries to return",
+						"schema": {
+							"type": "integer",
+							"default": 100,
+							"minimum": 1,
+							"maximum": 1000
+						}
+					},
+					{
+						"name": "offset",
+						"in": "query",
+						"required": false,
+						"description": "Number of entries to skip",
+						"schema": {
+							"type": "integer",
+							"default": 0,
+							"minimum": 0
+						}
+					},
+					{
+						"name": "level",
+						"in": "query",
+						"required": false,
+						"description": "Filter by log level",
+						"schema": {
+							"type": "string",
+							"enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+						}
+					},
+					{
+						"name": "logger_name",
+						"in": "query",
+						"required": false,
+						"description": "Filter by logger name",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "start_date",
+						"in": "query",
+						"required": false,
+						"description": "Filter by start date (ISO format)",
+						"schema": {
+							"type": "string",
+							"format": "date-time"
+						}
+					},
+					{
+						"name": "end_date",
+						"in": "query",
+						"required": false,
+						"description": "Filter by end date (ISO format)",
+						"schema": {
+							"type": "string",
+							"format": "date-time"
+						}
+					},
+					{
+						"name": "request_id",
+						"in": "query",
+						"required": false,
+						"description": "Filter by request ID",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "correlation_id",
+						"in": "query",
+						"required": false,
+						"description": "Filter by correlation ID",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Log entries retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/LogEntriesResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to retrieve log entries",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/logs/stats": {
+			"get": {
+				"summary": "Get log statistics",
+				"description": "Retrieve statistics about stored log entries. Authentication required.",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Log statistics retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/LogStatisticsResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to retrieve log statistics",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/logs/cleanup": {
+			"post": {
+				"summary": "Cleanup expired logs",
+				"description": "Manually trigger cleanup of expired log entries (older than 30 days). Authentication required.",
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Log cleanup completed successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/LogEntriesResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Failed to cleanup expired logs",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/unit-tests/sessions": {
+			"post": {
+				"summary": "Create a new unit test session",
+				"description": "Creates a new unit test session with a provided session ID",
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"session_id": {
+										"type": "string",
+										"description": "Unique session identifier (UUID)"
+									},
+									"total_tests": {
+										"type": "integer",
+										"description": "Total number of tests expected to run"
+									}
+								},
+								"required": ["session_id"]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Session created successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"session_id": { "type": "string" },
+										"message": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"summary": "List unit test sessions",
+				"description": "Retrieves a paginated list of unit test sessions",
+				"parameters": [
+					{
+						"name": "limit",
+						"in": "query",
+						"schema": { "type": "integer", "default": 50 },
+						"description": "Number of sessions to return"
+					},
+					{
+						"name": "offset",
+						"in": "query",
+						"schema": { "type": "integer", "default": 0 },
+						"description": "Number of sessions to skip"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Sessions retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"sessions": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/UnitTestSession" }
+										},
+										"pagination": {
+											"type": "object",
+											"properties": {
+												"limit": { "type": "integer" },
+												"offset": { "type": "integer" }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/unit-tests/sessions/{session_id}": {
+			"get": {
+				"summary": "Get session details",
+				"description": "Retrieves detailed information about a specific unit test session",
+				"parameters": [
+					{
+						"name": "session_id",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string" },
+						"description": "Session identifier"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Session details retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"session": { "$ref": "#/components/schemas/UnitTestSession" },
+										"tests": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/UnitTestResult" }
+										},
+										"stats": {
+											"type": "object",
+											"properties": {
+												"total": { "type": "integer" },
+												"completed": { "type": "integer" },
+												"failed": { "type": "integer" },
+												"running": { "type": "integer" },
+												"pending": { "type": "integer" }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/unit-tests/sessions/{session_id}/tests": {
+			"post": {
+				"summary": "Create a test record",
+				"description": "Creates a test record for tracking within a session",
+				"parameters": [
+					{
+						"name": "session_id",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string" },
+						"description": "Session identifier"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"test_name": {
+										"type": "string",
+										"description": "Name of the test"
+									},
+									"test_category": {
+										"type": "string",
+										"description": "Category of the test (unit, integration, e2e, etc.)"
+									}
+								},
+								"required": ["test_name"]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Test record created successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"test_name": { "type": "string" },
+										"message": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"get": {
+				"summary": "Get test results for a session",
+				"description": "Retrieves all test results for a specific session",
+				"parameters": [
+					{
+						"name": "session_id",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string" },
+						"description": "Session identifier"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Test results retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"session_id": { "type": "string" },
+										"tests": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/UnitTestResult" }
+										},
+										"stats": {
+											"type": "object",
+											"properties": {
+												"total": { "type": "integer" },
+												"completed": { "type": "integer" },
+												"failed": { "type": "integer" },
+												"running": { "type": "integer" },
+												"pending": { "type": "integer" }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/unit-tests/sessions/{session_id}/update-test": {
+			"post": {
+				"summary": "Update test result",
+				"description": "Updates the result of a specific test within a session",
+				"parameters": [
+					{
+						"name": "session_id",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string" },
+						"description": "Session identifier"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"test_name": {
+										"type": "string",
+										"description": "Name of the test"
+									},
+									"status": {
+										"type": "string",
+										"enum": ["running", "passed", "failed", "skipped", "error"],
+										"description": "Current status of the test"
+									},
+									"test_results": {
+										"type": "object",
+										"description": "Detailed test results (JSON object)"
+									},
+									"error_message": {
+										"type": "string",
+										"description": "Error message if test failed"
+									},
+									"duration_ms": {
+										"type": "integer",
+										"description": "Test duration in milliseconds"
+									}
+								},
+								"required": ["test_name", "status"]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Test result updated successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"test_name": { "type": "string" },
+										"status": { "type": "string" },
+										"message": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/unit-tests/sessions/{session_id}/complete": {
+			"post": {
+				"summary": "Complete a test session",
+				"description": "Marks a test session as completed, failed, or cancelled",
+				"parameters": [
+					{
+						"name": "session_id",
+						"in": "path",
+						"required": true,
+						"schema": { "type": "string" },
+						"description": "Session identifier"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"status": {
+										"type": "string",
+										"enum": ["completed", "failed", "cancelled"],
+										"description": "Final status of the session"
+									},
+									"completed_tests": {
+										"type": "integer",
+										"description": "Number of completed tests"
+									},
+									"failed_tests": {
+										"type": "integer",
+										"description": "Number of failed tests"
+									}
+								},
+								"required": ["status"]
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Session updated successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"session_id": { "type": "string" },
+										"status": { "type": "string" },
+										"message": { "type": "string" }
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/worker/self-test": {
+			"post": {
+				"summary": "Run worker self-tests",
+				"description": "Executes comprehensive self-tests for all worker endpoints and records results in the unit test database",
+				"requestBody": {
+					"required": false,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"base_url": {
+										"type": "string",
+										"description": "Base URL for the worker (defaults to current hostname)"
+									},
+									"api_key": {
+										"type": "string",
+										"description": "API key for authentication (defaults to WORKER_API_KEY)"
+									},
+									"timeout_ms": {
+										"type": "integer",
+										"description": "Timeout for individual tests in milliseconds (default: 30000)"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Self-tests completed successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"session_id": { "type": "string" },
+										"message": { "type": "string" },
+										"summary": {
+											"type": "object",
+											"properties": {
+												"total_tests": { "type": "integer" },
+												"passed": { "type": "integer" },
+												"failed": { "type": "integer" },
+												"errors": { "type": "integer" }
+											}
+										},
+										"results": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"test_name": { "type": "string" },
+													"status": { "type": "string", "enum": ["passed", "failed", "error"] },
+													"duration_ms": { "type": "integer" },
+													"error_message": { "type": "string" },
+													"test_results": { "type": "object" }
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/worker/self-test/status": {
+			"get": {
+				"summary": "Get self-test status",
+				"description": "Retrieves the status and results of a worker self-test session",
+				"parameters": [
+					{
+						"name": "session_id",
+						"in": "query",
+						"required": true,
+						"schema": { "type": "string" },
+						"description": "Session identifier from self-test execution"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Self-test status retrieved successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"success": { "type": "boolean" },
+										"session": { "$ref": "#/components/schemas/UnitTestSession" },
+										"tests": {
+											"type": "array",
+											"items": { "$ref": "#/components/schemas/UnitTestResult" }
+										},
+										"stats": {
+											"type": "object",
+											"properties": {
+												"total": { "type": "integer" },
+												"completed": { "type": "integer" },
+												"failed": { "type": "integer" },
+												"running": { "type": "integer" },
+												"pending": { "type": "integer" }
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/unit-test-agent-prompt": {
+			"get": {
+				"summary": "Get Unit Test Agent Prompt",
+				"description": "Retrieves the comprehensive Python AI agent implementation guide for unit test management",
+				"responses": {
+					"200": {
+						"description": "Unit test agent prompt retrieved successfully",
+						"content": {
+							"text/markdown": {
+								"schema": {
+									"type": "string",
+									"description": "Markdown content containing the complete Python AI agent implementation guide"
+								}
+							}
+						},
+						"headers": {
+							"Cache-Control": {
+								"description": "Caching directive",
+								"schema": {
+									"type": "string",
+									"example": "public, max-age=3600"
+								}
+							},
+							"Access-Control-Allow-Origin": {
+								"description": "CORS header",
+								"schema": {
+									"type": "string",
+									"example": "*"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Unit test agent prompt file not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "string",
+											"example": "Unit test agent prompt file not found"
+										}
+									}
+								}
+							}
+						}
+					},
+					"500": {
+						"description": "Internal server error",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"error": {
+											"type": "string",
+											"example": "Failed to serve unit test agent prompt"
+										},
+										"details": {
+											"type": "string",
+											"description": "Detailed error message"
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/ui/worker-agent-prompt": {
+			"get": {
+				"summary": "Worker Agent Prompt",
+				"description": "Serve the detailed prompt for the Cloudflare Worker AI agent. This endpoint provides integration instructions for HLS proxy streams and camera management.",
+				"tags": ["System"],
+				"responses": {
+					"200": {
+						"description": "Worker agent prompt retrieved successfully",
+						"content": {
+							"text/plain": {
+								"schema": {
+									"type": "string",
+									"description": "Plain text content containing the detailed prompt for Cloudflare Worker AI agent integration with HLS proxy streams"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/proxy/hls/{camera_id}/start": {
+			"post": {
+				"summary": "Start HLS Proxy",
+				"description": "Start HLS proxy for a specific camera to convert RTSP stream to HLS format",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID to start proxy for",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "HLS proxy started successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/StartProxyResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Camera not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"502": {
+						"description": "Bad Gateway - failed to start proxy",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/proxy/hls/{camera_id}/stop": {
+			"post": {
+				"summary": "Stop HLS Proxy",
+				"description": "Stop HLS proxy for a specific camera",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID to stop proxy for",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "HLS proxy stopped successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/StopProxyResponse"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					},
+					"404": {
+						"description": "Camera not found",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/proxy/hls/{camera_id}/{filename}": {
+			"get": {
+				"summary": "Get HLS File",
+				"description": "Retrieve HLS segments and playlist files for a camera stream",
+				"tags": ["Proxy"],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "filename",
+						"in": "path",
+						"required": true,
+						"description": "HLS filename (e.g., master.m3u8, segment.ts)",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "Authorization",
+						"in": "header",
+						"required": false,
+						"description": "Bearer token for authentication",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "x-api-key",
+						"in": "header",
+						"required": false,
+						"description": "API key for authentication",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "HLS file content",
+						"content": {
+							"application/vnd.apple.mpegurl": {
+								"schema": {
+									"type": "string"
+								}
+							},
+							"video/mp2t": {
+								"schema": {
+									"type": "string",
+									"format": "binary"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/proxy/hls/{camera_id}/refresh": {
+			"post": {
+				"summary": "Refresh HLS Lease",
+				"description": "Refresh the lease for an HLS proxy stream",
+				"tags": ["Proxy"],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"description": "Camera ID",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "lease_seconds",
+						"in": "query",
+						"required": false,
+						"description": "Lease duration in seconds",
+						"schema": {
+							"type": "integer"
+						}
+					},
+					{
+						"name": "warn_thresholds",
+						"in": "query",
+						"required": false,
+						"description": "Warning thresholds for lease expiration",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "Authorization",
+						"in": "header",
+						"required": false,
+						"description": "Bearer token for authentication",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Lease refreshed successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object"
+								}
+							}
+						}
+					}
+				}
+			}
+		},
+		"/proxy/session/token": {
+			"post": {
+				"summary": "Mint Session Token",
+				"description": "Generate a session token for HLS stream authentication",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "ttl_seconds",
+						"in": "query",
+						"required": false,
+						"description": "Token time-to-live in seconds (60-3600)",
+						"schema": {
+							"type": "integer",
+							"minimum": 60,
+							"maximum": 3600,
+							"default": 600
+						}
+					},
+					{
+						"name": "scopes",
+						"in": "query",
+						"required": false,
+						"description": "Token scopes",
+						"schema": {
+							"type": "string"
+						}
+					},
+					{
+						"name": "camera_ids",
+						"in": "query",
+						"required": false,
+						"description": "Comma-separated list of camera IDs",
+						"schema": {
+							"type": "string"
+						}
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "Session token generated successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"token": {
+											"type": "string",
+											"description": "Bearer token for HLS stream authentication"
+										},
+										"expires_at": {
+											"type": "string",
+											"format": "date-time",
+											"description": "Token expiration timestamp"
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Unauthorized - invalid or missing API key",
+						"content": {
+							"application/json": {
+								"schema": {
+									"$ref": "#/components/schemas/ErrorResponse"
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"securitySchemes": {
+			"ApiKeyAuth": {
+				"type": "apiKey",
+				"in": "header",
+				"name": "x-api-key",
+				"description": "API key for authentication"
+			}
+		},
+		"schemas": {
+			"WebhookEvent": {
+				"type": "object",
+				"required": ["type"],
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "Event type"
+					},
+					"camera": {
+						"type": "string",
+						"description": "Camera identifier"
+					}
+				},
+				"additionalProperties": true
+			},
+			"SecuritySweepResult": {
+				"type": "object",
+				"properties": {
+					"runId": {
+						"type": "string"
+					},
+					"ts": {
+						"type": "number"
+					},
+					"trigger": {
+						"type": "string"
+					},
+					"summary": {
+						"type": "string"
+					},
+					"observations": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/Observation"
+						}
+					}
+				}
+			},
+			"Observation": {
+				"type": "object",
+				"properties": {
+					"camera": {
+						"type": "string"
+					},
+					"rule": {
+						"type": "string"
+					},
+					"result": {
+						"type": "string",
+						"enum": ["pass", "warn", "fail"]
+					}
+				}
+			},
+			"ProtectLoginResponse": {
+				"type": "object",
+				"properties": {
+					"message": {
+						"type": "string"
+					},
+					"status": {
+						"type": "string"
+					}
+				}
+			},
+			"ProtectCamerasResponse": {
+				"type": "object",
+				"properties": {
+					"cameras": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ProtectCamera"
+						}
+					}
+				}
+			},
+			"ProtectCamera": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"host": {
+						"type": "string"
+					},
+					"connectionHost": {
+						"type": "string"
+					},
+					"lastSeen": {
+						"type": "string"
+					},
+					"isPoorNetwork": {
+						"type": "boolean"
+					},
+					"lastRing": {
+						"type": "string"
+					},
+					"videoCodec": {
+						"type": "string"
+					},
+					"wiredConnectionState": {
+						"type": "object"
+					},
+					"wifiConnectionState": {
+						"type": "object"
+					},
+					"talkbackSettings": {
+						"type": "object"
+					},
+					"speakerSettings": {
+						"type": "object"
+					},
+					"smartDetectSettings": {
+						"type": "object",
+						"properties": {
+							"objectTypes": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"autoTrackingObjectTypes": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"autoTrackingWithZoom": {
+								"type": "boolean"
+							},
+							"audioTypes": {
+								"type": "array",
+								"items": {
+									"type": "string"
+								}
+							},
+							"detectionRanges": {
+								"type": "array"
+							}
+						}
+					},
+					"motionZones": {
+						"type": "array"
+					},
+					"smartDetectZones": {
+						"type": "array"
+					},
+					"name": {
+						"type": "string"
+					},
+					"mac": {
+						"type": "string"
+					},
+					"type": {
+						"type": "string"
+					},
+					"state": {
+						"type": "string"
+					},
+					"isRecording": {
+						"type": "boolean"
+					},
+					"channels": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ProtectChannel"
+						}
+					}
+				}
+			},
+			"ProtectChannel": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"isRtspEnabled": {
+						"type": "boolean"
+					},
+					"rtspAlias": {
+						"type": "string"
+					}
+				}
+			},
+			"ProtectCameraResponse": {
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/ProtectCamera"
+					}
+				]
+			},
+			"ProtectStreamsResponse": {
+				"type": "object",
+				"properties": {
+					"streams": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/ProtectStream"
+						}
+					}
+				}
+			},
+			"ProtectStream": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"enabled": {
+						"type": "boolean"
+					},
+					"url": {
+						"type": "string"
+					}
+				}
+			},
+			"ErrorResponse": {
+				"type": "object",
+				"properties": {
+					"error": {
+						"type": "string"
+					}
+				}
+			},
+			"UnitTestSession": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer",
+						"description": "Auto-incrementing primary key"
+					},
+					"session_id": {
+						"type": "string",
+						"description": "Unique session identifier (UUID)"
+					},
+					"timestamp_start": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the session started"
+					},
+					"timestamp_completed": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the session completed"
+					},
+					"status": {
+						"type": "string",
+						"enum": ["running", "completed", "failed", "cancelled"],
+						"description": "Current status of the session"
+					},
+					"total_tests": {
+						"type": "integer",
+						"description": "Total number of tests expected"
+					},
+					"completed_tests": {
+						"type": "integer",
+						"description": "Number of completed tests"
+					},
+					"failed_tests": {
+						"type": "integer",
+						"description": "Number of failed tests"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the record was created"
+					},
+					"updated_at": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the record was last updated"
+					}
+				}
+			},
+			"UnitTestResult": {
+				"type": "object",
+				"properties": {
+					"id": {
+						"type": "integer",
+						"description": "Auto-incrementing primary key"
+					},
+					"session_id": {
+						"type": "string",
+						"description": "Session identifier this test belongs to"
+					},
+					"test_name": {
+						"type": "string",
+						"description": "Name of the test"
+					},
+					"test_category": {
+						"type": "string",
+						"description": "Category of the test (unit, integration, e2e, etc.)"
+					},
+					"timestamp_start": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the test started"
+					},
+					"timestamp_completed": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the test completed"
+					},
+					"status": {
+						"type": "string",
+						"enum": ["pending", "running", "passed", "failed", "skipped", "error"],
+						"description": "Current status of the test"
+					},
+					"test_results": {
+						"type": "string",
+						"description": "JSON string with detailed test results"
+					},
+					"error_message": {
+						"type": "string",
+						"description": "Error message if test failed"
+					},
+					"duration_ms": {
+						"type": "integer",
+						"description": "Test duration in milliseconds"
+					},
+					"created_at": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the record was created"
+					},
+					"updated_at": {
+						"type": "string",
+						"format": "date-time",
+						"description": "When the record was last updated"
+					}
+				}
+			},
+			"StartProxyResponse": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"const": "running",
+						"description": "Proxy status"
+					},
+					"proxy_hls_url": {
+						"type": "string",
+						"description": "HLS proxy URL for the camera stream",
+						"example": "/proxy/hls/cam_driveway/master.m3u8"
+					}
+				},
+				"required": ["proxy_hls_url"]
+			},
+			"StopProxyResponse": {
+				"type": "object",
+				"properties": {
+					"status": {
+						"type": "string",
+						"const": "stopped",
+						"description": "Proxy status"
+					}
+				}
+			},
+			"StreamInfo": {
+				"type": "object",
+				"properties": {
+					"vendor_rtsp_url": {
+						"type": "string",
+						"description": "Original RTSP URL from UniFi Protect",
+						"example": "rtsp://unifi.local:7447/cam_driveway"
+					},
+					"proxy_hls_url": {
+						"type": "string",
+						"description": "HLS proxy URL for browser playback",
+						"example": "https://example.com/proxy/hls/cam_driveway/master.m3u8"
+					},
+					"proxy_status": {
+						"type": "string",
+						"description": "Current proxy status",
+						"example": "running"
+					}
+				}
+			},
+			"CameraWithStreams": {
+				"type": "object",
+				"properties": {
+					"camera_id": {
+						"type": "string",
+						"description": "Camera identifier",
+						"example": "cam_driveway"
+					},
+					"name": {
+						"type": "string",
+						"description": "Camera name",
+						"example": "Driveway"
+					},
+					"streams": {
+						"$ref": "#/components/schemas/StreamInfo"
+					}
+				},
+				"required": ["camera_id", "name", "streams"]
+			}
+		}
+	}
 }

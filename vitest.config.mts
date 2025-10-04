@@ -1,7 +1,8 @@
-import { defineWorkersConfig } from '@cloudflare/vitest-pool-workers/config';
+import { defineConfig } from 'vitest/config';
 
-export default defineWorkersConfig({
+export default defineConfig({
 	test: {
+		pool: '@cloudflare/vitest-pool-workers',
 		poolOptions: {
 			workers: {
 				wrangler: { configPath: './wrangler.toml' },
@@ -10,19 +11,12 @@ export default defineWorkersConfig({
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],
-			exclude: [
-				'node_modules/',
-				'test/',
-				'**/*.d.ts',
-				'**/*.config.*',
-				'**/migrations/**',
-				'**/public/**'
-			],
+			exclude: ['node_modules/', 'test/', '**/*.d.ts', '**/*.config.*', '**/migrations/**', '**/public/**'],
 		},
-		reporter: ['verbose', 'json'],
+		reporters: ['verbose', 'json'],
 		outputFile: {
 			json: './test-results.json',
-			verbose: './test-results.txt'
+			verbose: './test-results.txt',
 		},
 		globals: true,
 		setupFiles: ['./test/setup.ts'],
@@ -31,7 +25,7 @@ export default defineWorkersConfig({
 	},
 	resolve: {
 		alias: {
-			'@': '/Volumes/Projects/workers/unifi-protect-api/src'
-		}
-	}
+			'@': '/Volumes/Projects/workers/unifi-protect-api/src',
+		},
+	},
 });

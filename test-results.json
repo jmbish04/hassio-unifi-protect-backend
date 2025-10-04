@@ -1,1 +1,109 @@
-{"numTotalTestSuites":8,"numPassedTestSuites":8,"numFailedTestSuites":0,"numPendingTestSuites":0,"numTotalTests":12,"numPassedTests":12,"numFailedTests":0,"numPendingTests":0,"numTodoTests":0,"snapshot":{"added":0,"failure":false,"filesAdded":0,"filesRemoved":0,"filesRemovedList":[],"filesUnmatched":0,"filesUpdated":0,"matched":0,"total":0,"unchecked":0,"uncheckedKeysByFile":[],"unmatched":0,"updated":0,"didUpdate":false},"startTime":1759539134886,"success":true,"testResults":[{"assertionResults":[{"ancestorTitles":["ProtectApiService","login"],"fullName":"ProtectApiService login should login successfully","status":"passed","title":"should login successfully","duration":7,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","login"],"fullName":"ProtectApiService login should handle login failure","status":"passed","title":"should handle login failure","duration":6,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","fetchBootstrapData"],"fullName":"ProtectApiService fetchBootstrapData should fetch bootstrap data successfully","status":"passed","title":"should fetch bootstrap data successfully","duration":4,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","fetchBootstrapData"],"fullName":"ProtectApiService fetchBootstrapData should retry with new login on 401","status":"passed","title":"should retry with new login on 401","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","getCameras"],"fullName":"ProtectApiService getCameras should return formatted camera data","status":"passed","title":"should return formatted camera data","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","getCameras"],"fullName":"ProtectApiService getCameras should handle empty camera list","status":"passed","title":"should handle empty camera list","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","getCamera"],"fullName":"ProtectApiService getCamera should return specific camera by ID","status":"passed","title":"should return specific camera by ID","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","getCamera"],"fullName":"ProtectApiService getCamera should return null for non-existent camera","status":"passed","title":"should return null for non-existent camera","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","getCameraStreams"],"fullName":"ProtectApiService getCameraStreams should return camera streams with RTSP URLs","status":"passed","title":"should return camera streams with RTSP URLs","duration":4,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","getCameraStreams"],"fullName":"ProtectApiService getCameraStreams should return empty array for non-existent camera","status":"passed","title":"should return empty array for non-existent camera","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","validateApiKey"],"fullName":"ProtectApiService validateApiKey should validate correct API key","status":"passed","title":"should validate correct API key","duration":3,"failureMessages":[],"meta":{}},{"ancestorTitles":["ProtectApiService","validateApiKey"],"fullName":"ProtectApiService validateApiKey should reject incorrect API key","status":"passed","title":"should reject incorrect API key","duration":3,"failureMessages":[],"meta":{}}],"startTime":1759539135918,"endTime":1759539135981,"status":"passed","message":"","name":"/Volumes/Projects/workers/unifi-protect-api/test/services/protect-api.test.ts"}]}
+{
+	"numTotalTestSuites": 4,
+	"numPassedTestSuites": 1,
+	"numFailedTestSuites": 3,
+	"numPendingTestSuites": 0,
+	"numTotalTests": 7,
+	"numPassedTests": 4,
+	"numFailedTests": 3,
+	"numPendingTests": 0,
+	"numTodoTests": 0,
+	"snapshot": {
+		"added": 0,
+		"failure": false,
+		"filesAdded": 0,
+		"filesRemoved": 0,
+		"filesRemovedList": [],
+		"filesUnmatched": 0,
+		"filesUpdated": 0,
+		"matched": 0,
+		"total": 0,
+		"unchecked": 0,
+		"uncheckedKeysByFile": [],
+		"unmatched": 0,
+		"updated": 0,
+		"didUpdate": false
+	},
+	"startTime": 1759543443866,
+	"success": false,
+	"testResults": [
+		{
+			"assertionResults": [
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "POST /worker/self-test"],
+					"fullName": "Worker Self-Test Endpoints POST /worker/self-test should run worker self-tests successfully",
+					"status": "passed",
+					"title": "should run worker self-tests successfully",
+					"duration": 96,
+					"failureMessages": [],
+					"meta": {}
+				},
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "POST /worker/self-test"],
+					"fullName": "Worker Self-Test Endpoints POST /worker/self-test should run self-tests with default configuration",
+					"status": "passed",
+					"title": "should run self-tests with default configuration",
+					"duration": 6,
+					"failureMessages": [],
+					"meta": {}
+				},
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "POST /worker/self-test"],
+					"fullName": "Worker Self-Test Endpoints POST /worker/self-test should handle self-test errors gracefully",
+					"status": "passed",
+					"title": "should handle self-test errors gracefully",
+					"duration": 5,
+					"failureMessages": [],
+					"meta": {}
+				},
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "GET /worker/self-test/status"],
+					"fullName": "Worker Self-Test Endpoints GET /worker/self-test/status should get self-test status successfully",
+					"status": "failed",
+					"title": "should get self-test status successfully",
+					"duration": 6,
+					"failureMessages": [
+						"AssertionError: expected 500 to be 200 // Object.is equality\n    at /Volumes/Projects/workers/unifi-protect-api/test/worker-self-test.test.ts:137:31\n    at Volumes/Projects/workers/unifi-protect-api/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+					],
+					"meta": {}
+				},
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "GET /worker/self-test/status"],
+					"fullName": "Worker Self-Test Endpoints GET /worker/self-test/status should return 400 if session_id is missing",
+					"status": "passed",
+					"title": "should return 400 if session_id is missing",
+					"duration": 5,
+					"failureMessages": [],
+					"meta": {}
+				},
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "GET /worker/self-test/status"],
+					"fullName": "Worker Self-Test Endpoints GET /worker/self-test/status should return 404 if session not found",
+					"status": "failed",
+					"title": "should return 404 if session not found",
+					"duration": 3,
+					"failureMessages": [
+						"AssertionError: expected 500 to be 404 // Object.is equality\n    at /Volumes/Projects/workers/unifi-protect-api/test/worker-self-test.test.ts:172:31\n    at Volumes/Projects/workers/unifi-protect-api/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+					],
+					"meta": {}
+				},
+				{
+					"ancestorTitles": ["Worker Self-Test Endpoints", "GET /worker/self-test/status"],
+					"fullName": "Worker Self-Test Endpoints GET /worker/self-test/status should handle status check errors gracefully",
+					"status": "failed",
+					"title": "should handle status check errors gracefully",
+					"duration": 5,
+					"failureMessages": [
+						"AssertionError: expected 'selfTestService.getTestResults is not…' to be 'Database error' // Object.is equality\n    at /Volumes/Projects/workers/unifi-protect-api/test/worker-self-test.test.ts:193:28\n    at Volumes/Projects/workers/unifi-protect-api/node_modules/@vitest/runner/dist/chunk-hooks.js:752:20"
+					],
+					"meta": {}
+				}
+			],
+			"startTime": 1759543444991,
+			"endTime": 1759543445129,
+			"status": "failed",
+			"message": "",
+			"name": "/Volumes/Projects/workers/unifi-protect-api/test/worker-self-test.test.ts"
+		}
+	]
+}

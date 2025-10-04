@@ -7,12 +7,14 @@ This document describes the log endpoints available for FastAPI integration with
 The log system provides a centralized way to store application logs in Cloudflare D1 with automatic cleanup after 30 days. It supports both single log entries and batch operations.
 
 **Authentication Model:**
+
 - **Writing Logs**: No authentication required (open for FastAPI integration)
 - **Reading Logs**: API key authentication required (secure access to log data)
 
 ## Database Schema
 
 The `log_entries` table includes:
+
 - **TTL**: 30 days (automatic cleanup)
 - **Indexes**: Optimized for common queries
 - **Triggers**: Automatic cleanup of expired entries
@@ -24,52 +26,56 @@ The `log_entries` table includes:
 Store single or multiple log entries. **No authentication required** - FastAPI can send logs freely.
 
 **Headers:**
+
 ```
 Content-Type: application/json
 ```
 
 **Single Log Entry:**
+
 ```json
 {
-  "level": "INFO",
-  "loggerName": "myapp.module",
-  "message": "User logged in successfully",
-  "module": "auth",
-  "functionName": "login",
-  "lineNumber": 42,
-  "threadId": "12345",
-  "processId": 6789,
-  "extraData": {
-    "userId": "user123",
-    "ip": "192.168.1.1"
-  },
-  "requestId": "req-abc123",
-  "correlationId": "corr-xyz789"
+	"level": "INFO",
+	"loggerName": "myapp.module",
+	"message": "User logged in successfully",
+	"module": "auth",
+	"functionName": "login",
+	"lineNumber": 42,
+	"threadId": "12345",
+	"processId": 6789,
+	"extraData": {
+		"userId": "user123",
+		"ip": "192.168.1.1"
+	},
+	"requestId": "req-abc123",
+	"correlationId": "corr-xyz789"
 }
 ```
 
 **Batch Log Entries:**
+
 ```json
 [
-  {
-    "level": "INFO",
-    "message": "First log entry",
-    "loggerName": "app"
-  },
-  {
-    "level": "ERROR",
-    "message": "Second log entry",
-    "loggerName": "app"
-  }
+	{
+		"level": "INFO",
+		"message": "First log entry",
+		"loggerName": "app"
+	},
+	{
+		"level": "ERROR",
+		"message": "Second log entry",
+		"loggerName": "app"
+	}
 ]
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "message": "Log entry stored successfully",
-  "logId": "uuid-here"
+	"success": true,
+	"message": "Log entry stored successfully",
+	"logId": "uuid-here"
 }
 ```
 
@@ -78,11 +84,13 @@ Content-Type: application/json
 Query log entries with optional filters. **Authentication required**.
 
 **Headers:**
+
 ```
 x-api-key: your-api-key
 ```
 
 **Query Parameters:**
+
 - `limit` (default: 100): Number of entries to return
 - `offset` (default: 0): Number of entries to skip
 - `level`: Filter by log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -93,35 +101,37 @@ x-api-key: your-api-key
 - `correlation_id`: Filter by correlation ID
 
 **Example:**
+
 ```
 GET /logs?level=ERROR&limit=50&start_date=2024-01-01T00:00:00Z
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "message": "Retrieved 25 log entries",
-  "count": 25,
-  "entries": [
-    {
-      "logId": "uuid-here",
-      "timestamp": "2024-01-15T10:30:00Z",
-      "level": "ERROR",
-      "loggerName": "myapp.auth",
-      "message": "Login failed",
-      "module": "auth",
-      "functionName": "login",
-      "lineNumber": 42,
-      "threadId": "12345",
-      "processId": 6789,
-      "extraData": {"userId": "user123"},
-      "sourceIp": "192.168.1.1",
-      "userAgent": "Mozilla/5.0...",
-      "requestId": "req-abc123",
-      "correlationId": "corr-xyz789"
-    }
-  ]
+	"success": true,
+	"message": "Retrieved 25 log entries",
+	"count": 25,
+	"entries": [
+		{
+			"logId": "uuid-here",
+			"timestamp": "2024-01-15T10:30:00Z",
+			"level": "ERROR",
+			"loggerName": "myapp.auth",
+			"message": "Login failed",
+			"module": "auth",
+			"functionName": "login",
+			"lineNumber": 42,
+			"threadId": "12345",
+			"processId": 6789,
+			"extraData": { "userId": "user123" },
+			"sourceIp": "192.168.1.1",
+			"userAgent": "Mozilla/5.0...",
+			"requestId": "req-abc123",
+			"correlationId": "corr-xyz789"
+		}
+	]
 }
 ```
 
@@ -130,32 +140,34 @@ GET /logs?level=ERROR&limit=50&start_date=2024-01-01T00:00:00Z
 Retrieve statistics about stored log entries. **Authentication required**.
 
 **Headers:**
+
 ```
 x-api-key: your-api-key
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "message": "Log statistics retrieved successfully",
-  "statistics": {
-    "totalEntries": 1500,
-    "entriesByLevel": {
-      "INFO": 800,
-      "WARNING": 300,
-      "ERROR": 200,
-      "CRITICAL": 50,
-      "DEBUG": 150
-    },
-    "entriesByLogger": {
-      "myapp.auth": 400,
-      "myapp.api": 300,
-      "myapp.database": 200
-    },
-    "oldestEntry": "2024-01-01T00:00:00Z",
-    "newestEntry": "2024-01-15T10:30:00Z"
-  }
+	"success": true,
+	"message": "Log statistics retrieved successfully",
+	"statistics": {
+		"totalEntries": 1500,
+		"entriesByLevel": {
+			"INFO": 800,
+			"WARNING": 300,
+			"ERROR": 200,
+			"CRITICAL": 50,
+			"DEBUG": 150
+		},
+		"entriesByLogger": {
+			"myapp.auth": 400,
+			"myapp.api": 300,
+			"myapp.database": 200
+		},
+		"oldestEntry": "2024-01-01T00:00:00Z",
+		"newestEntry": "2024-01-15T10:30:00Z"
+	}
 }
 ```
 
@@ -164,16 +176,18 @@ x-api-key: your-api-key
 Manually trigger cleanup of expired log entries. **Authentication required**.
 
 **Headers:**
+
 ```
 x-api-key: your-api-key
 ```
 
 **Response:**
+
 ```json
 {
-  "success": true,
-  "message": "Cleaned up 150 expired log entries",
-  "count": 150
+	"success": true,
+	"message": "Cleaned up 150 expired log entries",
+	"count": 150
 }
 ```
 
@@ -237,6 +251,7 @@ logger.error("Something went wrong", extra={"userId": "123"})
 ### cURL Examples
 
 **Single Log Entry:**
+
 ```bash
 curl -X POST "https://your-worker.workers.dev/logs" \
   -H "Content-Type: application/json" \
@@ -249,6 +264,7 @@ curl -X POST "https://your-worker.workers.dev/logs" \
 ```
 
 **Batch Log Entries:**
+
 ```bash
 curl -X POST "https://your-worker.workers.dev/logs" \
   -H "Content-Type: application/json" \
@@ -259,6 +275,7 @@ curl -X POST "https://your-worker.workers.dev/logs" \
 ```
 
 **Query Logs:**
+
 ```bash
 curl -X GET "https://your-worker.workers.dev/logs?level=ERROR&limit=10" \
   -H "x-api-key: your-api-key"
@@ -277,13 +294,14 @@ All endpoints return consistent error responses:
 
 ```json
 {
-  "success": false,
-  "message": "Error description",
-  "error": "Detailed error message"
+	"success": false,
+	"message": "Error description",
+	"error": "Detailed error message"
 }
 ```
 
 Common HTTP status codes:
+
 - `200`: Success
 - `400`: Bad Request (invalid JSON, missing required fields)
 - `401`: Unauthorized (missing or invalid API key)

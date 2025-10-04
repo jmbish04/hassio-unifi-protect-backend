@@ -22,6 +22,7 @@ examples/
 A complete FastAPI application example with Cloudflare Workers logging integration.
 
 **Features:**
+
 - Modular logging handler
 - Environment-based configuration
 - Batch processing
@@ -30,6 +31,7 @@ A complete FastAPI application example with Cloudflare Workers logging integrati
 - Complete documentation
 
 **Quick Start:**
+
 ```bash
 cd fastapi_example/
 pip install -r requirements.txt
@@ -56,11 +58,12 @@ This is the original FastAPI example. It's kept for reference but the new modula
 
 All examples require the following environment variable:
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `WORKER_URL` | Your Cloudflare Workers URL | Yes |
+| Variable     | Description                 | Required |
+| ------------ | --------------------------- | -------- |
+| `WORKER_URL` | Your Cloudflare Workers URL | Yes      |
 
 Example:
+
 ```bash
 export WORKER_URL=https://your-worker.workers.dev
 ```

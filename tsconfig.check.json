@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"skipLibCheck": true
+	},
+	"include": ["worker-configuration.d.ts", "src/**/*.ts", "test/**/*.ts", "**/*.mts"],
+	"exclude": ["node_modules", ".wrangler"]
+}
