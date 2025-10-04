@@ -42,6 +42,11 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 - `GET /agent/security_sweep` - Trigger security sweep
 - `POST /webhook` - Webhook for events
 
+### UI Endpoints
+
+- `GET /ui/worker-agent-prompt` - Detailed instructions for camera stream display and video streaming implementation
+- `GET /ui/` - UI root endpoint
+
 ## Environment Variables
 
 ### Required
@@ -69,6 +74,34 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 - `observations`: Individual rule evaluation results
 - `camera_configs`: Camera-specific configurations
 
+## Camera Stream Display Instructions
+
+### Getting Stream Display Instructions
+
+To get detailed instructions on how to display camera streams and implement video streaming functionality:
+
+```bash
+# Get comprehensive camera stream display instructions
+curl http://localhost:8787/ui/worker-agent-prompt
+```
+
+This endpoint provides:
+- **Video Streaming Implementation**: Detailed guide for implementing live camera streams
+- **Stream URL Management**: Instructions for handling RTSP and HLS stream URLs
+- **Modal Implementation**: Guide for creating camera viewer modals
+- **Video.js Integration**: Instructions for professional video player setup
+- **Stream Detection**: Logic for detecting and prioritizing different stream types
+- **Error Handling**: Comprehensive error handling for stream failures
+
+### Stream Display Features
+
+The current implementation includes:
+- **Clickable Camera Grid**: Camera cards that open full-screen modals
+- **Live Video Streaming**: HLS and MJPEG stream support with Video.js
+- **Stream URL Copying**: One-click copying of RTSP and HLS URLs
+- **Smart Stream Detection**: Automatic detection of HLS vs RTSP streams
+- **Responsive Design**: Mobile-optimized camera viewer interface
+
 ## Common Issues & Solutions
 
 ### 1. API Authentication Errors
@@ -85,6 +118,12 @@ This Cloudflare Worker provides a backend API for UniFi Protect integration with
 
 - Always verify `.dev.vars` file contains all required variables
 - Run `wrangler types` after changing environment variables
+
+### 4. Camera Stream Display Issues
+
+- **Unknown Camera IDs**: Check database field mapping (`camera_enum_id` vs `cameraId`)
+- **Unknown Event Types**: Verify webhook event field mapping (`event_type` vs `eventType`)
+- **Stream Not Loading**: Check `/ui/worker-agent-prompt` for stream implementation details
 
 ## Development Workflow
 
@@ -166,6 +205,7 @@ pnpm test:watch       # Run tests in watch mode
 - **Authentication**: Two separate API keys serve different purposes
 - **Error Handling**: All services include comprehensive error handling
 - **Type Safety**: Use `wrangler types` to generate current type definitions
+- **Camera Stream Display**: Check `/ui/worker-agent-prompt` endpoint for detailed instructions on how to display camera streams and implement video streaming functionality
 
 ## File Structure
 

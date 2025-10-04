@@ -40,6 +40,9 @@ export interface Env {
 	// Worker API
 	WORKER_API_KEY: string;
 
+	// FastAPI Proxy
+	FASTAPI_PROXY_URL: string;
+
 	// Notifications
 	NTFY_TOPIC_URL?: string;
 }

@@ -52,3 +52,6 @@ binding = "AI"
 # If your Protect hostname is behind Cloudflare Access, add these as secrets:
 # wrangler secret put ACCESS_CLIENT_ID
 # wrangler secret put ACCESS_CLIENT_SECRET
+
+# FastAPI Proxy URL for HLS streaming:
+# wrangler secret put FASTAPI_PROXY_URL

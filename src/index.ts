@@ -1115,6 +1115,153 @@ export default {
 			}
 		}
 
+		// FastAPI Proxy Endpoints
+		// Proxy session token endpoint
+		if (url.pathname === '/proxy/session/token' && req.method === 'POST') {
+			try {
+				const apiKey = req.headers.get('x-api-key');
+				if (!apiKey || apiKey !== env.WORKER_API_KEY) {
+					return new Response(JSON.stringify({ error: 'Invalid API key' }), {
+						status: 401,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
+				// Proxy to FastAPI
+				const fastApiUrl = `${env.FASTAPI_PROXY_URL}/proxy/session/token`;
+				const proxyResponse = await fetch(fastApiUrl, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'x-api-key': env.PROTECT_API_KEY,
+					},
+					body: JSON.stringify(await req.json()),
+				});
+
+				const data = await proxyResponse.json();
+				return json(data, proxyResponse.status);
+			} catch (error) {
+				console.error('Error proxying session token:', error);
+				return new Response(JSON.stringify({ error: 'Failed to get session token' }), {
+					status: 500,
+					headers: { 'Content-Type': 'application/json' },
+				});
+			}
+		}
+
+		// Proxy HLS start endpoint
+		if (url.pathname.startsWith('/proxy/hls/') && url.pathname.endsWith('/start') && req.method === 'POST') {
+			try {
+				const apiKey = req.headers.get('x-api-key');
+				if (!apiKey || apiKey !== env.WORKER_API_KEY) {
+					return new Response(JSON.stringify({ error: 'Invalid API key' }), {
+						status: 401,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
+				const cameraId = url.pathname.split('/')[3];
+				const fastApiUrl = `${env.FASTAPI_PROXY_URL}/proxy/hls/${cameraId}/start`;
+
+				const proxyResponse = await fetch(fastApiUrl, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'x-api-key': env.PROTECT_API_KEY,
+					},
+					body: JSON.stringify(await req.json()),
+				});
+
+				const data = await proxyResponse.json();
+				return json(data, proxyResponse.status);
+			} catch (error) {
+				console.error('Error proxying HLS start:', error);
+				return new Response(JSON.stringify({ error: 'Failed to start HLS stream' }), {
+					status: 500,
+					headers: { 'Content-Type': 'application/json' },
+				});
+			}
+		}
+
+		// Proxy HLS stream segments
+		if (url.pathname.startsWith('/proxy/hls/') && !url.pathname.endsWith('/start') && req.method === 'GET') {
+			try {
+				const authHeader = req.headers.get('authorization');
+				if (!authHeader || !authHeader.startsWith('Bearer ')) {
+					return new Response(JSON.stringify({ error: 'Bearer token required' }), {
+						status: 401,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
+				const fastApiUrl = `${env.FASTAPI_PROXY_URL}${url.pathname}`;
+
+				const proxyResponse = await fetch(fastApiUrl, {
+					method: 'GET',
+					headers: {
+						'Authorization': authHeader,
+					},
+				});
+
+				if (!proxyResponse.ok) {
+					return new Response(proxyResponse.body, { status: proxyResponse.status });
+				}
+
+				// Stream the response
+				return new Response(proxyResponse.body, {
+					headers: {
+						'Content-Type': proxyResponse.headers.get('content-type') || 'application/vnd.apple.mpegurl',
+						'Cache-Control': 'no-cache',
+					},
+				});
+			} catch (error) {
+				console.error('Error proxying HLS stream:', error);
+				return new Response(JSON.stringify({ error: 'Failed to stream HLS content' }), {
+					status: 500,
+					headers: { 'Content-Type': 'application/json' },
+				});
+			}
+		}
+
+		// Proxy HLS WebSocket endpoint
+		if (url.pathname.startsWith('/proxy/hls/') && url.pathname.endsWith('/ws') && req.method === 'GET') {
+			try {
+				const authHeader = req.headers.get('authorization');
+				if (!authHeader || !authHeader.startsWith('Bearer ')) {
+					return new Response(JSON.stringify({ error: 'Bearer token required' }), {
+						status: 401,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
+				const fastApiUrl = `${env.FASTAPI_PROXY_URL}${url.pathname}`;
+
+				// Proxy WebSocket connection
+				const proxyResponse = await fetch(fastApiUrl, {
+					method: 'GET',
+					headers: {
+						'Authorization': authHeader,
+						'Upgrade': 'websocket',
+						'Connection': 'Upgrade',
+					},
+				});
+
+				return new Response(proxyResponse.body, {
+					status: proxyResponse.status,
+					headers: {
+						'Upgrade': 'websocket',
+						'Connection': 'Upgrade',
+					},
+				});
+			} catch (error) {
+				console.error('Error proxying HLS WebSocket:', error);
+				return new Response(JSON.stringify({ error: 'Failed to establish WebSocket connection' }), {
+					status: 500,
+					headers: { 'Content-Type': 'application/json' },
+				});
+			}
+		}
+
 		return new Response('not found', { status: 404 });
 	},
 

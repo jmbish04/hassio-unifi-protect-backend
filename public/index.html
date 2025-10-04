@@ -748,6 +748,33 @@
 					font-size: 1.2rem;
 				}
 			}
+
+			.stream-status {
+				font-size: 0.8rem;
+				padding: 2px 6px;
+				border-radius: 3px;
+				font-weight: bold;
+			}
+
+			.stream-status.status-loading {
+				background: #ffc107;
+				color: #000;
+			}
+
+			.stream-status.status-playing {
+				background: #28a745;
+				color: #fff;
+			}
+
+			.stream-status.status-paused {
+				background: #6c757d;
+				color: #fff;
+			}
+
+			.stream-status.status-error {
+				background: #dc3545;
+				color: #fff;
+			}
 		</style>
 	</head>
 	<body>
@@ -1098,10 +1125,30 @@
 				const cameraGrid = document.createElement('div');
 				cameraGrid.className = 'camera-grid';
 
+				// Initialize streams for all online cameras first
+				const onlineCameras = cameras.filter(camera => camera.state === 'CONNECTED');
+				console.log(`Found ${onlineCameras.length} online cameras, initializing streams...`);
+
+				// Initialize streams in parallel
+				const streamPromises = onlineCameras.map(camera => initializeCameraStream(camera.id));
+				const streamResults = await Promise.allSettled(streamPromises);
+
+				// Log stream initialization results
+				streamResults.forEach((result, index) => {
+					const camera = onlineCameras[index];
+					if (result.status === 'fulfilled' && result.value.success) {
+						console.log(`✅ Stream initialized for camera ${camera.name} (${camera.id})`);
+					} else {
+						console.error(`❌ Failed to initialize stream for camera ${camera.name} (${camera.id}):`,
+							result.status === 'rejected' ? result.reason : result.value.error);
+					}
+				});
+
 				// Process each camera and fetch its streams
 				for (const camera of cameras) {
 					const cameraCard = document.createElement('div');
 					cameraCard.className = 'camera-card';
+					cameraCard.setAttribute('data-camera-id', camera.id);
 
 					const statusClass = camera.state === 'CONNECTED' ? 'status-success' : 'status-error';
 					const statusText = camera.state === 'CONNECTED' ? 'Online' : 'Offline';
@@ -1174,7 +1221,7 @@
 										   autoplay
 										   playsinline
 										   onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-										<source src="${hlsStream.url}" type="application/vnd.apple.mpegurl">
+										<source src="${window.cameraStreams && window.cameraStreams[camera.id] ? window.cameraStreams[camera.id].hlsUrl : hlsStream.url}" type="application/vnd.apple.mpegurl">
 										Your browser does not support HLS video.
 									</video>
 									<div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px;">
@@ -1290,6 +1337,7 @@
                             <span class="status-indicator ${statusClass}"></span>
                             ${statusText} | ${camera.type || 'Unknown Type'}
                         </div>
+                        <div class="stream-status status-loading">Initializing...</div>
                         <div class="camera-status">
                             MAC: ${camera.mac || 'N/A'} | Recording: ${camera.isRecording ? 'Yes' : 'No'}
                         </div>
@@ -1303,6 +1351,14 @@
 				document.getElementById('cameraSection').appendChild(cameraGrid);
 
 				// Initialize HLS streams for all video elements
+				setTimeout(() => {
+					initializeVideoElements();
+
+					// Connect WebSockets for real-time updates
+					onlineCameras.forEach(camera => {
+						connectWebSocket(camera.id);
+					});
+				}, 100);
 				initializeHLSStreams();
 
 				// Start camera refresh after a short delay to let images load
@@ -1497,24 +1553,53 @@
 				}
 
 				try {
-					// Fetch camera streams
-					const streamsResponse = await fetch(`/protect/cameras/${cameraId}/streams`, {
-						headers: { 'x-api-key': apiKey }
+					// Step 1: Get session token for HLS access
+					const tokenResponse = await fetch('/proxy/session/token', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey
+						}
 					});
 
-					if (!streamsResponse.ok) {
-						throw new Error('Failed to fetch camera streams');
+					if (!tokenResponse.ok) {
+						throw new Error('Failed to get session token');
 					}
 
-					const streamsData = await streamsResponse.json();
-					const streams = streamsData.streams || [];
+					const tokenData = await tokenResponse.json();
+					const sessionToken = tokenData.token;
 
-					// Display stream URLs
+					// Step 2: Start HLS proxy for this camera
+					const startResponse = await fetch(`/proxy/hls/${cameraId}/start`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey
+						}
+					});
+
+					if (!startResponse.ok) {
+						throw new Error('Failed to start HLS proxy');
+					}
+
+					const startData = await startResponse.json();
+					const hlsUrl = startData.proxy_hls_url;
+
+					// Step 3: Display stream URLs
+					const streams = [
+						{
+							name: 'HLS Stream',
+							enabled: true,
+							url: hlsUrl,
+							authToken: sessionToken
+						}
+					];
+
 					displayStreamUrls(streams);
 					displayCameraDetails(cameraId);
 
-					// Try to start video stream
-					await startVideoStream(cameraId, streams);
+					// Step 4: Start video stream with authentication
+					await startVideoStream(cameraId, streams, sessionToken);
 
 				} catch (error) {
 					console.error('Error loading camera streams:', error);
@@ -1626,23 +1711,197 @@
 			}
 
 			// Utility Functions
-			function initializeHLSStreams() {
-				// Initialize HLS.js for all video elements
+			// Initialize HLS streams for all cameras
+			async function initializeHLSStreams() {
+				console.log('Initializing HLS streams for all cameras...');
+
+				// Load HLS.js dynamically for non-Safari browsers
+				if (!window.Hls && !videojs.browser.IS_SAFARI) {
+					const script = document.createElement('script');
+					script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
+					script.onload = () => {
+						console.log('HLS.js loaded successfully');
+						window.Hls = Hls;
+					};
+					document.head.appendChild(script);
+				}
+			}
+
+			// Initialize stream for a specific camera
+			async function initializeCameraStream(cameraId) {
+				try {
+					console.log(`Initializing stream for camera: ${cameraId}`);
+
+					// Step 1: Get session token
+					const tokenResponse = await fetch('/proxy/session/token', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey
+						},
+						body: JSON.stringify({ camera_id: cameraId })
+					});
+
+					if (!tokenResponse.ok) {
+						throw new Error(`Failed to get session token: ${tokenResponse.status}`);
+					}
+
+					const tokenData = await tokenResponse.json();
+					const sessionToken = tokenData.token;
+					console.log(`Got session token for camera ${cameraId}`);
+
+					// Step 2: Start HLS proxy
+					const startResponse = await fetch(`/proxy/hls/${cameraId}/start`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey
+						},
+						body: JSON.stringify({ quality: 'medium' })
+					});
+
+					if (!startResponse.ok) {
+						throw new Error(`Failed to start HLS proxy: ${startResponse.status}`);
+					}
+
+					const startData = await startResponse.json();
+					console.log(`Started HLS proxy for camera ${cameraId}:`, startData);
+
+					// Store stream info for later use
+					window.cameraStreams = window.cameraStreams || {};
+					window.cameraStreams[cameraId] = {
+						token: sessionToken,
+						hlsUrl: startData.proxy_hls_url,
+						status: startData.status
+					};
+
+					return { success: true, cameraId, hlsUrl: startData.proxy_hls_url };
+				} catch (error) {
+					console.error(`Failed to initialize stream for camera ${cameraId}:`, error);
+					return { success: false, cameraId, error: error.message };
+				}
+			}
+
+			// Initialize HLS.js for video elements
+			function initializeVideoElements() {
 				const videoElements = document.querySelectorAll('video[id^="camera-video-"]');
 				videoElements.forEach(video => {
+					const cameraId = video.id.replace('camera-video-', '');
+					const streamInfo = window.cameraStreams && window.cameraStreams[cameraId];
+
+					if (!streamInfo || !streamInfo.hlsUrl) {
+						console.warn(`No stream info found for camera ${cameraId}`);
+						return;
+					}
+
+					// Set up error handling
+					video.addEventListener('error', (e) => {
+						console.error(`Video error for camera ${cameraId}:`, e);
+						updateCameraStatus(cameraId, 'error', 'Stream failed to load');
+					});
+
+					video.addEventListener('loadstart', () => {
+						updateCameraStatus(cameraId, 'loading', 'Loading stream...');
+					});
+
+					video.addEventListener('canplay', () => {
+						updateCameraStatus(cameraId, 'playing', 'Live');
+					});
+
 					if (typeof Hls !== 'undefined' && Hls.isSupported()) {
-						const hls = new Hls();
-						hls.loadSource(video.querySelector('source').src);
-						hls.attachMedia(video);
-						hls.on(Hls.Events.MANIFEST_PARSED, () => {
-							video.play().catch(e => console.log('Autoplay prevented:', e));
+						const hls = new Hls({
+							debug: false,
+							enableWorker: true,
+							lowLatencyMode: true,
+							backBufferLength: 90
 						});
+
+						hls.loadSource(streamInfo.hlsUrl);
+						hls.attachMedia(video);
+
+						hls.on(Hls.Events.MANIFEST_PARSED, () => {
+							console.log(`HLS manifest parsed for camera ${cameraId}`);
+							video.play().catch(e => {
+								console.log('Autoplay prevented for camera', cameraId, ':', e);
+								updateCameraStatus(cameraId, 'paused', 'Click to play');
+							});
+						});
+
+						hls.on(Hls.Events.ERROR, (event, data) => {
+							console.error(`HLS error for camera ${cameraId}:`, data);
+							updateCameraStatus(cameraId, 'error', 'Stream error');
+						});
+
+						// Store HLS instance for cleanup
+						video.hlsInstance = hls;
 					} else if (video.canPlayType('application/vnd.apple.mpegurl')) {
 						// Native HLS support (Safari)
-						video.src = video.querySelector('source').src;
-						video.play().catch(e => console.log('Autoplay prevented:', e));
+						video.src = streamInfo.hlsUrl;
+						video.play().catch(e => {
+							console.log('Autoplay prevented for camera', cameraId, ':', e);
+							updateCameraStatus(cameraId, 'paused', 'Click to play');
+						});
+					} else {
+						console.error(`HLS not supported for camera ${cameraId}`);
+						updateCameraStatus(cameraId, 'error', 'HLS not supported');
 					}
 				});
+			}
+
+			// Update camera status display
+			function updateCameraStatus(cameraId, status, message) {
+				const statusElement = document.querySelector(`[data-camera-id="${cameraId}"] .stream-status`);
+				if (statusElement) {
+					statusElement.textContent = message;
+					statusElement.className = `stream-status status-${status}`;
+				}
+			}
+
+			// WebSocket connection for real-time updates
+			function connectWebSocket(cameraId) {
+				const streamInfo = window.cameraStreams && window.cameraStreams[cameraId];
+				if (!streamInfo || !streamInfo.token) {
+					console.warn(`No stream info or token for camera ${cameraId}`);
+					return;
+				}
+
+				const wsUrl = `ws://${window.location.host}/proxy/hls/${cameraId}/ws`;
+				const ws = new WebSocket(wsUrl, [], {
+					headers: {
+						'Authorization': `Bearer ${streamInfo.token}`
+					}
+				});
+
+				ws.onopen = () => {
+					console.log(`WebSocket connected for camera ${cameraId}`);
+				};
+
+				ws.onmessage = (event) => {
+					try {
+						const data = JSON.parse(event.data);
+						console.log(`WebSocket message for camera ${cameraId}:`, data);
+
+						if (data.type === 'status') {
+							updateCameraStatus(cameraId, data.status, data.message);
+						} else if (data.type === 'error') {
+							updateCameraStatus(cameraId, 'error', data.message);
+						}
+					} catch (e) {
+						console.error('Error parsing WebSocket message:', e);
+					}
+				};
+
+				ws.onerror = (error) => {
+					console.error(`WebSocket error for camera ${cameraId}:`, error);
+				};
+
+				ws.onclose = () => {
+					console.log(`WebSocket closed for camera ${cameraId}`);
+					// Attempt to reconnect after 5 seconds
+					setTimeout(() => connectWebSocket(cameraId), 5000);
+				};
+
+				return ws;
 			}
 
 			function copyToClipboard(elementId) {

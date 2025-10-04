@@ -37,6 +37,7 @@ This is a Cloudflare Worker that provides a backend API for UniFi Protect integr
 4. **Verify Environment**: Check `.dev.vars` file
 5. **Test Authentication**: Use curl with correct API keys
 6. **Check Logs**: Look for specific error messages in wrangler output
+7. **Camera Stream Issues**: Check `/ui/worker-agent-prompt` for detailed stream display instructions
 
 ## 🛠️ Development Commands
 
@@ -94,12 +95,40 @@ pnpm format
 - `public/index.html` - Web dashboard
 - `.dev.vars` - Environment configuration
 
+## 🎥 Camera Stream Display
+
+### Getting Stream Instructions
+
+For detailed camera stream display and video streaming implementation instructions:
+
+```bash
+# Get comprehensive camera stream display guide
+curl http://localhost:8787/ui/worker-agent-prompt
+```
+
+This provides detailed instructions for:
+- **Video Streaming**: HLS and MJPEG stream implementation
+- **Modal Interface**: Full-screen camera viewer modals
+- **Stream URLs**: RTSP and HLS URL management and copying
+- **Video.js Integration**: Professional video player setup
+- **Stream Detection**: Smart detection of stream types
+- **Error Handling**: Comprehensive stream failure handling
+
+### Current Stream Features
+
+- ✅ **Clickable Camera Grid**: Cards that open full-screen modals
+- ✅ **Live Video Streaming**: HLS and MJPEG support with Video.js
+- ✅ **Stream URL Copying**: One-click copying of stream URLs
+- ✅ **Smart Stream Detection**: Automatic HLS vs RTSP detection
+- ✅ **Responsive Design**: Mobile-optimized interface
+
 ## 🎯 Testing Strategy
 
 1. **API Endpoints**: Test with curl first
 2. **Frontend**: Use browser at `http://localhost:8787`
 3. **Authentication**: Test both API key types
 4. **Error Handling**: Verify graceful error responses
+5. **Camera Streams**: Test modal video streaming functionality
 
 ## ⚠️ Important Reminders
 
@@ -109,6 +138,7 @@ pnpm format
 - **Header Format**: Use `x-api-key` not `Authorization: Bearer`
 - **Error Messages**: Provide specific, actionable error messages
 - **Type Safety**: Run `wrangler types` after configuration changes
+- **Camera Stream Display**: Check `/ui/worker-agent-prompt` endpoint for detailed instructions on how to display camera streams and implement video streaming functionality
 
 ## 🔧 Common Fixes Applied
 

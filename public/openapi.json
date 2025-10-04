@@ -1644,6 +1644,37 @@
 					}
 				}
 			}
+		},
+		"/proxy/hls/{camera_id}/ws": {
+			"get": {
+				"summary": "HLS stream WebSocket",
+				"description": "WebSocket connection for real-time stream status and lease management",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Camera identifier"
+					}
+				],
+				"responses": {
+					"101": {
+						"description": "WebSocket connection established"
+					},
+					"401": {
+						"description": "Invalid or missing Bearer token"
+					}
+				}
+			}
 		}
 	},
 	"components": {
@@ -1653,6 +1684,12 @@
 				"in": "header",
 				"name": "x-api-key",
 				"description": "API key for authentication"
+			},
+			"BearerAuth": {
+				"type": "http",
+				"scheme": "bearer",
+				"bearerFormat": "JWT",
+				"description": "Bearer token for HLS stream authentication"
 			}
 		},
 		"schemas": {
