@@ -554,6 +554,150 @@
 				color: #6c757d;
 			}
 
+			/* Modal Styles */
+			.modal {
+				position: fixed;
+				z-index: 1000;
+				left: 0;
+				top: 0;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0, 0, 0, 0.8);
+				backdrop-filter: blur(5px);
+			}
+
+			.modal-content {
+				background-color: #fff;
+				margin: 2% auto;
+				padding: 0;
+				border-radius: 12px;
+				width: 90%;
+				max-width: 1200px;
+				max-height: 90vh;
+				overflow: hidden;
+				box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+			}
+
+			.modal-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				padding: 20px 30px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border-radius: 12px 12px 0 0;
+			}
+
+			.modal-header h2 {
+				margin: 0;
+				font-size: 1.5rem;
+			}
+
+			.close {
+				color: white;
+				font-size: 28px;
+				font-weight: bold;
+				cursor: pointer;
+				opacity: 0.8;
+				transition: opacity 0.3s;
+			}
+
+			.close:hover {
+				opacity: 1;
+			}
+
+			.modal-body {
+				padding: 0;
+				max-height: calc(90vh - 80px);
+				overflow-y: auto;
+			}
+
+			#modalVideoContainer {
+				background: #000;
+				position: relative;
+			}
+
+			.stream-info {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 20px;
+				padding: 20px 30px;
+				background: #f8f9fa;
+			}
+
+			.stream-urls h4,
+			.camera-details h4 {
+				margin: 0 0 15px 0;
+				color: #333;
+				font-size: 1.1rem;
+			}
+
+			.stream-url-item {
+				margin-bottom: 15px;
+				padding: 10px;
+				background: white;
+				border-radius: 6px;
+				border-left: 4px solid #007bff;
+			}
+
+			.stream-url-item strong {
+				display: block;
+				margin-bottom: 5px;
+				color: #495057;
+				font-size: 0.9rem;
+			}
+
+			.stream-url-input {
+				width: 100%;
+				padding: 8px 12px;
+				border: 1px solid #dee2e6;
+				border-radius: 4px;
+				font-family: monospace;
+				font-size: 0.8rem;
+				background: #f8f9fa;
+			}
+
+			.copy-btn {
+				background: #007bff;
+				color: white;
+				border: none;
+				padding: 6px 12px;
+				border-radius: 4px;
+				cursor: pointer;
+				font-size: 0.8rem;
+				margin-top: 5px;
+				transition: background 0.3s;
+			}
+
+			.copy-btn:hover {
+				background: #0056b3;
+			}
+
+			.copy-btn.copied {
+				background: #28a745;
+			}
+
+			.camera-details div {
+				margin-bottom: 8px;
+				padding: 5px 0;
+				border-bottom: 1px solid #e9ecef;
+			}
+
+			.camera-details strong {
+				color: #495057;
+				margin-right: 10px;
+			}
+
+			.camera-card {
+				cursor: pointer;
+				transition: transform 0.3s, box-shadow 0.3s;
+			}
+
+			.camera-card:hover {
+				transform: translateY(-5px);
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+			}
+
 			@media (max-width: 768px) {
 				.nav-links {
 					flex-direction: column;
@@ -572,6 +716,23 @@
 				.status-grid,
 				.camera-grid {
 					grid-template-columns: 1fr;
+				}
+
+				.modal-content {
+					width: 95%;
+					margin: 5% auto;
+				}
+
+				.stream-info {
+					grid-template-columns: 1fr;
+				}
+
+				.modal-header {
+					padding: 15px 20px;
+				}
+
+				.modal-header h2 {
+					font-size: 1.2rem;
 				}
 			}
 		</style>
@@ -710,6 +871,46 @@
 				</section>
 			</div>
 		</main>
+
+		<!-- Camera Modal -->
+		<div id="cameraModal" class="modal" style="display: none;">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h2 id="modalCameraName">Camera Feed</h2>
+					<span class="close" onclick="closeCameraModal()">&times;</span>
+				</div>
+				<div class="modal-body">
+					<div id="modalVideoContainer">
+						<video id="modalVideoPlayer"
+							   class="video-js vjs-default-skin vjs-fluid"
+							   controls
+							   autoplay
+							   preload="auto"
+							   style="width: 100%; height: 400px;">
+							<p class="vjs-no-js">
+								To view this video please enable JavaScript, and consider upgrading to a web browser that
+								<a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>.
+							</p>
+						</video>
+					</div>
+					<div id="modalStreamInfo" class="stream-info">
+						<div class="stream-urls">
+							<h4>Stream URLs</h4>
+							<div id="modalStreamUrls"></div>
+						</div>
+						<div class="camera-details">
+							<h4>Camera Details</h4>
+							<div id="modalCameraDetails"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Video.js CSS -->
+		<link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+		<!-- Video.js JavaScript -->
+		<script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
 
 		<script>
 			let apiKey = localStorage.getItem('unifi-protect-api-key') || '';
@@ -1060,10 +1261,12 @@
 					}
 
 					cameraCard.innerHTML = `
-                    <div class="camera-feed">
-                        ${videoElement || `<div style="padding: 50px; text-align: center; background: #f0f0f0; color: #666;">No video stream available</div>`}
+                    <div class="camera-feed" onclick="openCameraModal('${camera.id}', '${camera.name || 'Unknown Camera'}')">
+                        ${videoElement || `<div style="padding: 50px; text-align: center; background: #f0f0f0; color: #666;">Click to view live feed</div>`}
                         <div style="margin-top: 8px; font-size: 0.9rem; color: #666;">${streamsInfo}</div>
-                        ${streamUrls}
+                        <div style="position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
+                            Click to view
+                        </div>
                     </div>
                     <div class="camera-info">
                         <div class="camera-name">${camera.name || 'Unknown Camera'}</div>
@@ -1227,6 +1430,178 @@
 					}
 				});
 			});
+
+			// Modal and Video Functions
+			let modalPlayer = null;
+
+			function openCameraModal(cameraId, cameraName) {
+				document.getElementById('modalCameraName').textContent = cameraName;
+				document.getElementById('cameraModal').style.display = 'block';
+
+				// Initialize Video.js player if not already done
+				if (!modalPlayer) {
+					modalPlayer = videojs('modalVideoPlayer', {
+						fluid: true,
+						responsive: true,
+						liveui: true,
+						html5: {
+							hls: {
+								enableLowInitialPlaylist: true,
+								smoothQualityChange: true,
+								overrideNative: true
+							}
+						}
+					});
+				}
+
+				// Load camera streams and start video
+				loadCameraStreams(cameraId);
+			}
+
+			function closeCameraModal() {
+				document.getElementById('cameraModal').style.display = 'none';
+
+				// Stop current video
+				if (modalPlayer) {
+					modalPlayer.pause();
+					modalPlayer.src('');
+				}
+			}
+
+			async function loadCameraStreams(cameraId) {
+				if (!apiKey) {
+					alert('Please enter your API key first');
+					return;
+				}
+
+				try {
+					// Fetch camera streams
+					const streamsResponse = await fetch(`/protect/cameras/${cameraId}/streams`, {
+						headers: { 'x-api-key': apiKey }
+					});
+
+					if (!streamsResponse.ok) {
+						throw new Error('Failed to fetch camera streams');
+					}
+
+					const streamsData = await streamsResponse.json();
+					const streams = streamsData.streams || [];
+
+					// Display stream URLs
+					displayStreamUrls(streams);
+					displayCameraDetails(cameraId);
+
+					// Try to start video stream
+					await startVideoStream(cameraId, streams);
+
+				} catch (error) {
+					console.error('Error loading camera streams:', error);
+					document.getElementById('modalStreamUrls').innerHTML = `
+						<div class="error">Error loading streams: ${error.message}</div>
+					`;
+				}
+			}
+
+			async function startVideoStream(cameraId, streams) {
+				// Try HLS stream first
+				const hlsStream = streams.find(s => s.name.toLowerCase().includes('hls') || s.url.includes('.m3u8'));
+
+				if (hlsStream && hlsStream.enabled) {
+					// Use HLS stream
+					modalPlayer.src({
+						src: hlsStream.url,
+						type: 'application/x-mpegURL'
+					});
+					modalPlayer.play().catch(e => console.log('Autoplay prevented:', e));
+					return;
+				}
+
+				// Fallback to MJPEG stream from /feed endpoint
+				try {
+					const feedUrl = `/protect/cameras/${cameraId}/feed?refresh=true`;
+					modalPlayer.src({
+						src: feedUrl,
+						type: 'video/mp2t' // MJPEG stream type
+					});
+					modalPlayer.play().catch(e => console.log('Autoplay prevented:', e));
+				} catch (error) {
+					console.error('Error starting video stream:', error);
+					// Show error in video container
+					document.getElementById('modalVideoContainer').innerHTML = `
+						<div style="display: flex; align-items: center; justify-content: center; height: 400px; background: #000; color: #fff; text-align: center;">
+							<div>
+								<div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
+								<div>Video stream unavailable</div>
+								<div style="font-size: 0.9rem; opacity: 0.7; margin-top: 10px;">Check camera configuration</div>
+							</div>
+						</div>
+					`;
+				}
+			}
+
+			function displayStreamUrls(streams) {
+				const container = document.getElementById('modalStreamUrls');
+
+				if (streams.length === 0) {
+					container.innerHTML = '<div class="error">No streams available</div>';
+					return;
+				}
+
+				const streamsHtml = streams.map(stream => `
+					<div class="stream-url-item">
+						<strong>${stream.name}:</strong>
+						<input type="text"
+							   class="stream-url-input"
+							   value="${stream.url}"
+							   readonly
+							   id="stream-${stream.name.replace(/\s+/g, '-').toLowerCase()}">
+						<button class="copy-btn"
+								onclick="copyStreamUrl('stream-${stream.name.replace(/\s+/g, '-').toLowerCase()}')">
+							Copy
+						</button>
+					</div>
+				`).join('');
+
+				container.innerHTML = streamsHtml;
+			}
+
+			function displayCameraDetails(cameraId) {
+				// This would typically fetch detailed camera info
+				// For now, show basic info
+				document.getElementById('modalCameraDetails').innerHTML = `
+					<div><strong>Camera ID:</strong> ${cameraId}</div>
+					<div><strong>Status:</strong> <span class="status-success">Online</span></div>
+					<div><strong>Stream Type:</strong> HLS/MJPEG</div>
+					<div><strong>Resolution:</strong> Auto-detect</div>
+				`;
+			}
+
+			function copyStreamUrl(inputId) {
+				const input = document.getElementById(inputId);
+				if (input) {
+					input.select();
+					document.execCommand('copy');
+
+					// Show feedback
+					const button = input.nextElementSibling;
+					const originalText = button.textContent;
+					button.textContent = 'Copied!';
+					button.classList.add('copied');
+
+					setTimeout(() => {
+						button.textContent = originalText;
+						button.classList.remove('copied');
+					}, 2000);
+				}
+			}
+
+			// Close modal when clicking outside
+			window.onclick = function(event) {
+				const modal = document.getElementById('cameraModal');
+				if (event.target === modal) {
+					closeCameraModal();
+				}
+			}
 
 			// Utility Functions
 			function initializeHLSStreams() {
