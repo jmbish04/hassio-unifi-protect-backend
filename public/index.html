@@ -1071,7 +1071,7 @@
 
 			async function displayCameras(cameras) {
 				console.log('Displaying cameras:', cameras);
-				
+
 				if (cameras.length === 0) {
 					document.getElementById('cameraSection').innerHTML = `
                     <div class="error">
@@ -1367,7 +1367,7 @@
 
 			async function displayWebhookEvents(events) {
 				console.log('Displaying webhook events:', events);
-				
+
 				if (events.length === 0) {
 					document.getElementById('webhookSection').innerHTML = '<div class="loading">No webhook events found</div>';
 					return;
@@ -1385,14 +1385,14 @@
 
 				events.forEach((event) => {
 					console.log('Processing webhook event:', event);
-					
+
 					const eventElement = document.createElement('div');
 					eventElement.className = 'webhook-event';
 
 					const timestamp = new Date(event.timestamp).toLocaleString();
 					const eventType = event.event_type || event.eventType || event.type || 'unknown';
 					const cameraId = event.camera_enum_id || event.cameraId || event.camera || 'unknown';
-					
+
 					console.log('Parsed event data:', { eventType, cameraId, timestamp });
 
 					let thumbnailHtml = '';
