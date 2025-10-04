@@ -1052,7 +1052,7 @@ export default {
 		// Unit Test Agent Prompt endpoint
 		if (url.pathname === '/unit-test-agent-prompt' && req.method === 'GET') {
 			try {
-				const promptFile = await env.ASSETS.fetch(new Request(new URL('/unit_test_agent_prompt.md', req.url)));
+				const promptFile = await env.ASSETS.fetch(new Request(new URL('/UNIT_TEST_AGENT_PROMPT.md', req.url)));
 
 				if (!promptFile.ok) {
 					return new Response(JSON.stringify({ error: 'Unit test agent prompt file not found' }), {
