@@ -1127,9 +1127,9 @@ export default {
 					});
 				}
 
-				// Proxy to FastAPI
-				const fastApiUrl = `${env.FASTAPI_PROXY_URL}/proxy/session/token`;
-				const proxyResponse = await fetch(fastApiUrl, {
+				// Proxy to UniFi Protect API
+				const protectApiUrl = `${env.PROTECT_API}/proxy/session/token`;
+				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -1161,9 +1161,9 @@ export default {
 				}
 
 				const cameraId = url.pathname.split('/')[3];
-				const fastApiUrl = `${env.FASTAPI_PROXY_URL}/proxy/hls/${cameraId}/start`;
+				const protectApiUrl = `${env.PROTECT_API}/proxy/hls/${cameraId}/start`;
 
-				const proxyResponse = await fetch(fastApiUrl, {
+				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -1194,9 +1194,9 @@ export default {
 					});
 				}
 
-				const fastApiUrl = `${env.FASTAPI_PROXY_URL}${url.pathname}`;
+				const protectApiUrl = `${env.PROTECT_API}${url.pathname}`;
 
-				const proxyResponse = await fetch(fastApiUrl, {
+				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'GET',
 					headers: {
 						'Authorization': authHeader,
@@ -1234,10 +1234,10 @@ export default {
 					});
 				}
 
-				const fastApiUrl = `${env.FASTAPI_PROXY_URL}${url.pathname}`;
+				const protectApiUrl = `${env.PROTECT_API}${url.pathname}`;
 
 				// Proxy WebSocket connection
-				const proxyResponse = await fetch(fastApiUrl, {
+				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'GET',
 					headers: {
 						'Authorization': authHeader,

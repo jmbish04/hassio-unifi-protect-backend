@@ -1645,6 +1645,183 @@
 				}
 			}
 		},
+		"/proxy/session/token": {
+			"post": {
+				"summary": "Generate session token for HLS stream access",
+				"description": "Generates a Bearer token for authenticating HLS stream requests",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"camera_id": {
+										"type": "string",
+										"description": "Camera ID for token generation"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "Session token generated successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"token": {
+											"type": "string",
+											"description": "Bearer token for HLS authentication"
+										},
+										"expires_in": {
+											"type": "integer",
+											"description": "Token expiration time in seconds"
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid API key"
+					}
+				}
+			}
+		},
+		"/proxy/hls/{camera_id}/start": {
+			"post": {
+				"summary": "Start HLS proxy for camera",
+				"description": "Starts the HLS proxy service for a specific camera, converting RTSP to HLS",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"ApiKeyAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Camera identifier"
+					}
+				],
+				"requestBody": {
+					"required": true,
+					"content": {
+						"application/json": {
+							"schema": {
+								"type": "object",
+								"properties": {
+									"quality": {
+										"type": "string",
+										"enum": ["high", "medium", "low"],
+										"default": "medium"
+									}
+								}
+							}
+						}
+					}
+				},
+				"responses": {
+					"200": {
+						"description": "HLS proxy started successfully",
+						"content": {
+							"application/json": {
+								"schema": {
+									"type": "object",
+									"properties": {
+										"proxy_hls_url": {
+											"type": "string",
+											"description": "HLS stream URL"
+										},
+										"status": {
+											"type": "string",
+											"enum": ["running", "starting", "error"]
+										}
+									}
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid API key"
+					},
+					"404": {
+						"description": "Camera not found"
+					}
+				}
+			}
+		},
+		"/proxy/hls/{camera_id}/{filename}": {
+			"get": {
+				"summary": "Get HLS stream segment",
+				"description": "Serves HLS stream segments and playlist files",
+				"tags": ["Proxy"],
+				"security": [
+					{
+						"BearerAuth": []
+					}
+				],
+				"parameters": [
+					{
+						"name": "camera_id",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "Camera identifier"
+					},
+					{
+						"name": "filename",
+						"in": "path",
+						"required": true,
+						"schema": {
+							"type": "string"
+						},
+						"description": "HLS segment or playlist filename"
+					}
+				],
+				"responses": {
+					"200": {
+						"description": "HLS content served successfully",
+						"content": {
+							"application/vnd.apple.mpegurl": {
+								"schema": {
+									"type": "string"
+								}
+							},
+							"video/mp2t": {
+								"schema": {
+									"type": "string",
+									"format": "binary"
+								}
+							}
+						}
+					},
+					"401": {
+						"description": "Invalid or missing Bearer token"
+					},
+					"404": {
+						"description": "Stream not found or not running"
+					}
+				}
+			}
+		},
 		"/proxy/hls/{camera_id}/ws": {
 			"get": {
 				"summary": "HLS stream WebSocket",
