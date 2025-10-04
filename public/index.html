@@ -137,6 +137,19 @@
 				color: #667eea;
 			}
 
+			.btn-primary {
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				border: none;
+				font-weight: 600;
+			}
+
+			.btn-primary:hover {
+				background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+				transform: translateY(-2px);
+				box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+			}
+
 			.section {
 				background: white;
 				margin: 2rem 0;
@@ -821,6 +834,7 @@
 					<h2>Unit Test Sessions</h2>
 					<div class="unit-test-actions">
 						<button onclick="loadUnitTestSessions()" class="btn">Refresh Sessions</button>
+						<button onclick="createNewTestSession()" class="btn btn-primary">Create New Session</button>
 						<button onclick="runWorkerSelfTest()" class="btn">Run Self Test</button>
 					</div>
 					<div id="unitTestSection">
@@ -1056,6 +1070,8 @@
 			}
 
 			async function displayCameras(cameras) {
+				console.log('Displaying cameras:', cameras);
+				
 				if (cameras.length === 0) {
 					document.getElementById('cameraSection').innerHTML = `
                     <div class="error">
@@ -1350,6 +1366,8 @@
 			}
 
 			async function displayWebhookEvents(events) {
+				console.log('Displaying webhook events:', events);
+				
 				if (events.length === 0) {
 					document.getElementById('webhookSection').innerHTML = '<div class="loading">No webhook events found</div>';
 					return;
@@ -1366,12 +1384,16 @@
 				webhookEvents.className = 'webhook-events';
 
 				events.forEach((event) => {
+					console.log('Processing webhook event:', event);
+					
 					const eventElement = document.createElement('div');
 					eventElement.className = 'webhook-event';
 
 					const timestamp = new Date(event.timestamp).toLocaleString();
-					const eventType = event.eventType || event.type || 'unknown';
-					const cameraId = event.cameraId || event.camera || 'unknown';
+					const eventType = event.event_type || event.eventType || event.type || 'unknown';
+					const cameraId = event.camera_enum_id || event.cameraId || event.camera || 'unknown';
+					
+					console.log('Parsed event data:', { eventType, cameraId, timestamp });
 
 					let thumbnailHtml = '';
 					if (event.thumbnail_r2_key) {
@@ -1390,7 +1412,7 @@
                     </div>
                     <div class="webhook-details">
                         <div class="webhook-detail">
-                            <strong>Event ID:</strong> ${event.eventId || event.id || 'N/A'}
+                            <strong>Event ID:</strong> ${event.event_id || event.eventId || event.id || 'N/A'}
                         </div>
                         <div class="webhook-detail">
                             <strong>Camera ID:</strong> ${cameraId}
@@ -1816,6 +1838,97 @@
 						${testsHtml}
 					</div>
 				`;
+			}
+
+			async function createNewTestSession() {
+				if (!apiKey) {
+					alert('Please enter your API key first');
+					return;
+				}
+
+				const section = document.getElementById('unitTestSection');
+				section.innerHTML = '<div class="loading">Creating new test session and starting tests...</div>';
+
+				try {
+					// Generate a unique session ID
+					const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+					// First, create a new session
+					const createResponse = await fetch('/unit-tests/sessions', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey,
+						},
+						body: JSON.stringify({
+							session_id: sessionId,
+							total_tests: 0 // Will be updated when tests start
+						}),
+					});
+
+					if (!createResponse.ok) {
+						throw new Error(`Failed to create session: ${createResponse.status}`);
+					}
+
+					const createData = await createResponse.json();
+
+					// Now kick off the worker self-tests
+					const testResponse = await fetch('/worker/self-test', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'x-api-key': apiKey,
+						},
+						body: JSON.stringify({
+							base_url: window.location.origin,
+							api_key: apiKey,
+							session_id: sessionId
+						}),
+					});
+
+					if (!testResponse.ok) {
+						throw new Error(`Failed to start tests: ${testResponse.status}`);
+					}
+
+					const testData = await testResponse.json();
+
+					if (testData.success) {
+						section.innerHTML = `
+							<div class="success">
+								<h3>New test session created and tests started!</h3>
+								<p><strong>Session ID:</strong> ${sessionId}</p>
+								<p><strong>Status:</strong> Tests are running in the background</p>
+								<p><strong>Total Tests:</strong> ${testData.summary?.total_tests || 'Calculating...'}</p>
+								<div style="margin-top: 20px;">
+									<button onclick="loadUnitTestSessions()" class="btn">View All Sessions</button>
+									<button onclick="loadSessionDetails('${sessionId}')" class="btn btn-primary">View This Session</button>
+								</div>
+							</div>
+						`;
+
+						// Auto-refresh the sessions list to show the new session
+						setTimeout(() => {
+							loadUnitTestSessions();
+						}, 1000);
+					} else {
+						section.innerHTML = `
+							<div class="error">
+								<h3>Session created but tests failed to start</h3>
+								<p><strong>Session ID:</strong> ${sessionId}</p>
+								<p><strong>Error:</strong> ${testData.message || 'Unknown error'}</p>
+								<button onclick="loadUnitTestSessions()" class="btn">View All Sessions</button>
+							</div>
+						`;
+					}
+				} catch (error) {
+					section.innerHTML = `
+						<div class="error">
+							<h3>Error creating test session</h3>
+							<p>${error.message}</p>
+							<button onclick="loadUnitTestSessions()" class="btn">View All Sessions</button>
+						</div>
+					`;
+				}
 			}
 
 			async function runWorkerSelfTest() {
