@@ -138,6 +138,12 @@ export class ProtectApiService {
 			throw new Error('PROTECT_API environment variable is not configured');
 		}
 
+		// Check if PROTECT_API_KEY is configured
+		if (!this.env.PROTECT_API_KEY) {
+			console.error('PROTECT_API_KEY environment variable is not set');
+			throw new Error('PROTECT_API_KEY environment variable is not configured');
+		}
+
 		const camerasUrl = `${this.env.PROTECT_API}/protect/cameras`;
 
 		try {
@@ -165,7 +171,6 @@ export class ProtectApiService {
 			const items = data.items || [];
 
 			console.log(`Found ${items.length} cameras in API response`);
-			console.log('Full API response:', JSON.stringify(data, null, 2));
 
 			// If no cameras returned, log the issue but don't provide test data
 			if (items.length === 0) {
@@ -175,15 +180,17 @@ export class ProtectApiService {
 				console.warn('3. API endpoint is incorrect');
 				console.warn('4. Cameras are not online');
 				console.warn('5. UniFi Protect system is not accessible');
+				console.warn(`API URL: ${camerasUrl}`);
+				console.warn(`API Key present: ${!!this.env.PROTECT_API_KEY}`);
 				return [];
 			}
 
 			// Convert API format to our internal format
 			const cameras = items.map((item) => ({
-				id: item.camera_id,
+				id: item.id,
 				name: item.name || 'Unknown Camera',
-				type: item.model || 'Unknown',
-				state: item.is_online ? 'CONNECTED' : 'DISCONNECTED',
+				type: item.type || 'Unknown',
+				state: item.isConnected ? 'CONNECTED' : 'DISCONNECTED',
 				mac: '', // Not available in this API
 				isRecording: false, // Not available in this API
 				host: '', // Not available in this API
@@ -209,6 +216,12 @@ export class ProtectApiService {
 			}));
 
 			console.log(`Successfully processed ${cameras.length} cameras`);
+
+			// Summary: Count online vs offline cameras
+			const onlineCount = cameras.filter((cam) => cam.state === 'CONNECTED').length;
+			const offlineCount = cameras.filter((cam) => cam.state === 'DISCONNECTED').length;
+			console.log(`Camera status summary: ${onlineCount} online, ${offlineCount} offline`);
+
 			return cameras;
 		} catch (error) {
 			console.error('Cameras fetch error:', error);

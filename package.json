@@ -12,6 +12,7 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"build": "wrangler deploy --dry-run",
+		"set:secrets": "wrangler secret bulk .dev.vars",
 		"test": "vitest",
 		"test:run": "vitest run",
 		"test:watch": "vitest --watch",
