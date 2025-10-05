@@ -1160,8 +1160,22 @@ export default {
 					});
 				}
 
+				// Check if PROTECT_API is configured
+				if (!env.PROTECT_API) {
+					console.error('PROTECT_API environment variable is not set');
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service not configured',
+						details: 'PROTECT_API environment variable is not set'
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				const cameraId = url.pathname.split('/')[3];
 				const protectApiUrl = `${env.PROTECT_API}/proxy/hls/${cameraId}/start`;
+
+				console.log(`Proxying HLS start request to: ${protectApiUrl}`);
 
 				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'POST',
@@ -1172,11 +1186,25 @@ export default {
 					body: JSON.stringify(await req.json()),
 				});
 
+				if (!proxyResponse.ok) {
+					console.error(`HLS proxy error: ${proxyResponse.status} ${proxyResponse.statusText}`);
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service unavailable',
+						details: `External service returned ${proxyResponse.status}: ${proxyResponse.statusText}`
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				const data = await proxyResponse.json();
 				return json(data, proxyResponse.status);
 			} catch (error) {
 				console.error('Error proxying HLS start:', error);
-				return new Response(JSON.stringify({ error: 'Failed to start HLS stream' }), {
+				return new Response(JSON.stringify({
+					error: 'Failed to start HLS stream',
+					details: error instanceof Error ? error.message : 'Unknown error'
+				}), {
 					status: 500,
 					headers: { 'Content-Type': 'application/json' },
 				});
@@ -1194,7 +1222,21 @@ export default {
 					});
 				}
 
+				// Check if PROTECT_API is configured
+				if (!env.PROTECT_API) {
+					console.error('PROTECT_API environment variable is not set');
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service not configured',
+						details: 'PROTECT_API environment variable is not set'
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				const protectApiUrl = `${env.PROTECT_API}${url.pathname}`;
+
+				console.log(`Proxying HLS stream request to: ${protectApiUrl}`);
 
 				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'GET',
@@ -1204,7 +1246,14 @@ export default {
 				});
 
 				if (!proxyResponse.ok) {
-					return new Response(proxyResponse.body, { status: proxyResponse.status });
+					console.error(`HLS stream proxy error: ${proxyResponse.status} ${proxyResponse.statusText}`);
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service unavailable',
+						details: `External service returned ${proxyResponse.status}: ${proxyResponse.statusText}`
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
 				}
 
 				// Stream the response
@@ -1216,7 +1265,10 @@ export default {
 				});
 			} catch (error) {
 				console.error('Error proxying HLS stream:', error);
-				return new Response(JSON.stringify({ error: 'Failed to stream HLS content' }), {
+				return new Response(JSON.stringify({
+					error: 'Failed to stream HLS content',
+					details: error instanceof Error ? error.message : 'Unknown error'
+				}), {
 					status: 500,
 					headers: { 'Content-Type': 'application/json' },
 				});
@@ -1234,7 +1286,21 @@ export default {
 					});
 				}
 
+				// Check if PROTECT_API is configured
+				if (!env.PROTECT_API) {
+					console.error('PROTECT_API environment variable is not set');
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service not configured',
+						details: 'PROTECT_API environment variable is not set'
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				const protectApiUrl = `${env.PROTECT_API}${url.pathname}`;
+
+				console.log(`Proxying HLS WebSocket request to: ${protectApiUrl}`);
 
 				// Proxy WebSocket connection
 				const proxyResponse = await fetch(protectApiUrl, {
@@ -1246,6 +1312,17 @@ export default {
 					},
 				});
 
+				if (!proxyResponse.ok) {
+					console.error(`HLS WebSocket proxy error: ${proxyResponse.status} ${proxyResponse.statusText}`);
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service unavailable',
+						details: `External service returned ${proxyResponse.status}: ${proxyResponse.statusText}`
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				return new Response(proxyResponse.body, {
 					status: proxyResponse.status,
 					headers: {
@@ -1255,7 +1332,10 @@ export default {
 				});
 			} catch (error) {
 				console.error('Error proxying HLS WebSocket:', error);
-				return new Response(JSON.stringify({ error: 'Failed to establish WebSocket connection' }), {
+				return new Response(JSON.stringify({
+					error: 'Failed to establish WebSocket connection',
+					details: error instanceof Error ? error.message : 'Unknown error'
+				}), {
 					status: 500,
 					headers: { 'Content-Type': 'application/json' },
 				});

@@ -1139,8 +1139,11 @@
 					if (result.status === 'fulfilled' && result.value.success) {
 						console.log(`✅ Stream initialized for camera ${camera.name} (${camera.id})`);
 					} else {
-						console.error(`❌ Failed to initialize stream for camera ${camera.name} (${camera.id}):`,
-							result.status === 'rejected' ? result.reason : result.value.error);
+						const error = result.status === 'rejected' ? result.reason : result.value.error;
+						console.error(`❌ Failed to initialize stream for camera ${camera.name} (${camera.id}):`, error);
+
+						// Update camera status to show streaming error
+						updateCameraStatus(camera.id, 'error', error.includes('HLS streaming service unavailable') ? 'Streaming service not configured' : 'Stream failed');
 					}
 				});
 
@@ -1743,7 +1746,8 @@
 					});
 
 					if (!tokenResponse.ok) {
-						throw new Error(`Failed to get session token: ${tokenResponse.status}`);
+						const errorData = await tokenResponse.json().catch(() => ({}));
+						throw new Error(`Failed to get session token: ${tokenResponse.status} - ${errorData.error || tokenResponse.statusText}`);
 					}
 
 					const tokenData = await tokenResponse.json();
@@ -1761,7 +1765,11 @@
 					});
 
 					if (!startResponse.ok) {
-						throw new Error(`Failed to start HLS proxy: ${startResponse.status}`);
+						const errorData = await startResponse.json().catch(() => ({}));
+						if (startResponse.status === 503) {
+							throw new Error(`HLS streaming service unavailable: ${errorData.details || errorData.error || 'Service not configured'}`);
+						}
+						throw new Error(`Failed to start HLS proxy: ${startResponse.status} - ${errorData.error || startResponse.statusText}`);
 					}
 
 					const startData = await startResponse.json();
@@ -1813,7 +1821,13 @@
 							debug: false,
 							enableWorker: true,
 							lowLatencyMode: true,
-							backBufferLength: 90
+							backBufferLength: 90,
+							xhrSetup: function(xhr, url) {
+								// Add authorization header to all HLS requests
+								if (streamInfo.token) {
+									xhr.setRequestHeader('Authorization', `Bearer ${streamInfo.token}`);
+								}
+							}
 						});
 
 						hls.loadSource(streamInfo.hlsUrl);
@@ -1835,7 +1849,9 @@
 						// Store HLS instance for cleanup
 						video.hlsInstance = hls;
 					} else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-						// Native HLS support (Safari)
+						// Native HLS support (Safari) - Note: Safari doesn't support custom headers for HLS
+						// We need to use a different approach for Safari authentication
+						console.warn(`Native HLS for camera ${cameraId} may not work with authentication`);
 						video.src = streamInfo.hlsUrl;
 						video.play().catch(e => {
 							console.log('Autoplay prevented for camera', cameraId, ':', e);
@@ -1865,7 +1881,7 @@
 					return;
 				}
 
-				const wsUrl = `ws://${window.location.host}/proxy/hls/${cameraId}/ws`;
+				const wsUrl = `wss://${window.location.host}/proxy/hls/${cameraId}/ws`;
 				const ws = new WebSocket(wsUrl, [], {
 					headers: {
 						'Authorization': `Bearer ${streamInfo.token}`
