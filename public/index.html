@@ -1310,18 +1310,27 @@
                         `;
 						}
 					} else {
-						// No streams at all
+						// No streams at all - check if this is due to streaming service not being configured
+						const hasStreamingError = window.cameraStreams && window.cameraStreams[camera.id] && window.cameraStreams[camera.id].error;
+						const isStreamingServiceError = hasStreamingError && hasStreamingError.includes('HLS streaming service unavailable');
+
 						videoElement = `
                         <div style="position: relative; height: 200px; border-radius: 8px; overflow: hidden; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;">
                             <div style="font-size: 2rem; margin-bottom: 10px;">📹</div>
                             <div style="font-size: 1.2rem; margin-bottom: 10px; font-weight: bold;">${camera.name || 'Camera'}</div>
                             <div style="font-size: 0.9rem; margin-bottom: 15px; text-align: center; opacity: 0.9;">
-                                No streams configured<br>
-                                <small>Check API connection</small>
+                                ${isStreamingServiceError ?
+                                    'Streaming service not configured<br><small>PROTECT_API environment variable not set</small>' :
+                                    'No streams configured<br><small>Check API connection</small>'
+                                }
                             </div>
                             <div style="position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem;">
                                 ${statusText}
                             </div>
+                            ${isStreamingServiceError ?
+                                '<div style="position: absolute; bottom: 8px; right: 8px; background: rgba(255,193,7,0.9); color: #000; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">Service Not Configured</div>' :
+                                ''
+                            }
                         </div>
                     `;
 					}
@@ -1786,6 +1795,14 @@
 					return { success: true, cameraId, hlsUrl: startData.proxy_hls_url };
 				} catch (error) {
 					console.error(`Failed to initialize stream for camera ${cameraId}:`, error);
+
+					// Store error info for UI display
+					window.cameraStreams = window.cameraStreams || {};
+					window.cameraStreams[cameraId] = {
+						error: error.message,
+						status: 'error'
+					};
+
 					return { success: false, cameraId, error: error.message };
 				}
 			}

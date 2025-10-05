@@ -1127,8 +1127,23 @@ export default {
 					});
 				}
 
+				// Check if PROTECT_API is configured
+				if (!env.PROTECT_API) {
+					console.error('PROTECT_API environment variable is not set');
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service not configured',
+						details: 'PROTECT_API environment variable is not set'
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				// Proxy to UniFi Protect API
 				const protectApiUrl = `${env.PROTECT_API}/proxy/session/token`;
+
+				console.log(`Proxying session token request to: ${protectApiUrl}`);
+
 				const proxyResponse = await fetch(protectApiUrl, {
 					method: 'POST',
 					headers: {
@@ -1138,11 +1153,25 @@ export default {
 					body: JSON.stringify(await req.json()),
 				});
 
+				if (!proxyResponse.ok) {
+					console.error(`Session token proxy error: ${proxyResponse.status} ${proxyResponse.statusText}`);
+					return new Response(JSON.stringify({
+						error: 'HLS streaming service unavailable',
+						details: `External service returned ${proxyResponse.status}: ${proxyResponse.statusText}`
+					}), {
+						status: 503,
+						headers: { 'Content-Type': 'application/json' },
+					});
+				}
+
 				const data = await proxyResponse.json();
 				return json(data, proxyResponse.status);
 			} catch (error) {
 				console.error('Error proxying session token:', error);
-				return new Response(JSON.stringify({ error: 'Failed to get session token' }), {
+				return new Response(JSON.stringify({
+					error: 'Failed to get session token',
+					details: error instanceof Error ? error.message : 'Unknown error'
+				}), {
 					status: 500,
 					headers: { 'Content-Type': 'application/json' },
 				});
